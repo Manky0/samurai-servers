@@ -3,8 +3,16 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <cstdint>
 
-#include "radioFunctions.h"
+#include "sta.h"
+
+enum Command : uint8_t {
+    START_MEASUREMENTS = 0x01,
+    CAPTURE_IMAGE = 0x02,
+    MOVE_FOWARD = 0x0E,
+    MOVE_BACKWARD = 0x0F,
+};
 
 #define PORT 8000 // Use unique port for each server
 
@@ -50,7 +58,6 @@ int main() {
 
     std::cout << "Server started on port " << PORT << std::endl;
 
-    // Infinite loop to continuously accept client connections
     while (true) {
         // Accept incoming connection
         if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
@@ -58,23 +65,32 @@ int main() {
             continue; // Skip this iteration and wait for the next connection
         }
 
-        // Read message from client
         memset(buffer, 0, sizeof(buffer));  // Clear buffer before reading
         std::string currBeamRSS;
 
         int bytes_read = read(new_socket, buffer, 1024);
         if (bytes_read > 0) {
-            // Compare received message and respond accordingly
-            if (strcmp(buffer, "start_capture") == 0) {
+            switch (bytes_read)
+            {
+            case START_MEASUREMENTS:
                 currBeamRSS = getPerBeamRSS();
                 strcpy(response, currBeamRSS.c_str());
-            } else {
-                strcpy(response, "Unknown message");
+                break;
+    
+            default:
+                break;
             }
+            // // Compare received message and respond accordingly
+            // if (strcmp(buffer, "start_capture") == 0) {
+            //     currBeamRSS = getPerBeamRSS();
+            //     strcpy(response, currBeamRSS.c_str());
+            // } else {
+            //     strcpy(response, "Unknown message");
+            // }
 
-            // Send response to client
-            send(new_socket, response, strlen(response), 0);
-            std::cout << "Response sent to client: " << response << std::endl;
+            // // Send response to client
+            // send(new_socket, response, strlen(response), 0);
+            // std::cout << "Response sent to client: " << response << std::endl;
         } else {
             std::cerr << "Failed to read from client" << std::endl;
         }
@@ -84,7 +100,6 @@ int main() {
         std::cout << "\n";
     }
 
-    // Close server socket (though this line will never be reached in the infinite loop)
     close(server_fd);
     return 0;
 }
