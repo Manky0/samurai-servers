@@ -3,25 +3,24 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <cstdint>
 
 #include "sta.h"
+
+#define PORT 8000
 
 enum Command : uint8_t {
     START_MEASUREMENTS = 0x01,
     CAPTURE_IMAGE = 0x02,
-    MOVE_FOWARD = 0x0E,
+    MOVE_FORWARD = 0x0E,
     MOVE_BACKWARD = 0x0F,
 };
-
-#define PORT 8000 // Use unique port for each server
 
 int main() {
     int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
-    char buffer[1024] = {0};
-    char response[1024];  // Change to mutable response
+    uint8_t command;
+    char response[1024];
     int opt = 1;
 
     // Create socket file descriptor
@@ -37,7 +36,6 @@ int main() {
         return -1;
     }
 
-    // Define the server address
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
@@ -65,37 +63,41 @@ int main() {
             continue; // Skip this iteration and wait for the next connection
         }
 
-        memset(buffer, 0, sizeof(buffer));  // Clear buffer before reading
         std::string currBeamRSS;
 
-        int bytes_read = read(new_socket, buffer, 1024);
-        if (bytes_read > 0) {
-            switch (bytes_read)
-            {
-            case START_MEASUREMENTS:
-                currBeamRSS = getPerBeamRSS();
-                strcpy(response, currBeamRSS.c_str());
-                break;
-    
-            default:
-                break;
-            }
-            // // Compare received message and respond accordingly
-            // if (strcmp(buffer, "start_capture") == 0) {
-            //     currBeamRSS = getPerBeamRSS();
-            //     strcpy(response, currBeamRSS.c_str());
-            // } else {
-            //     strcpy(response, "Unknown message");
-            // }
+        // Read the command (1 byte) from the client
+        int bytes_read = read(new_socket, &command, sizeof(command));
 
-            // // Send response to client
-            // send(new_socket, response, strlen(response), 0);
+        if (bytes_read > 0) {
+            switch (command) {
+                case START_MEASUREMENTS:
+                    currBeamRSS = getPerBeamRSS();
+                    strcpy(response, currBeamRSS.c_str());
+                    break;
+
+                case CAPTURE_IMAGE:
+                    strcpy(response, "Capturing image");
+                    break;
+
+                case MOVE_FORWARD:
+                    strcpy(response, "Moving forward");
+                    break;
+
+                case MOVE_BACKWARD:
+                    strcpy(response, "Moving backward");
+                    break;
+
+                default:
+                    strcpy(response, "Unknown command");
+                    break;
+            }
+
+            send(new_socket, response, strlen(response), 0);
             // std::cout << "Response sent to client: " << response << std::endl;
         } else {
             std::cerr << "Failed to read from client" << std::endl;
         }
 
-        // Close client socket after communication is done
         close(new_socket);
         std::cout << "\n";
     }

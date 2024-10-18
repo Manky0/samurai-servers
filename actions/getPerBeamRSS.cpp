@@ -7,13 +7,13 @@
 #include <thread>
 #include <nlohmann/json.hpp>
 
-#include "sta.h"
+#include "../sta.h"
 using json = nlohmann::json;
 
-// Buffer size for receiving data
 const int BUFFER_SIZE = 1024;
 
-std::string radioSendAndReceive(int radio_sock, const json &dataToSend, int buf_len, std::string &lastReceived) {
+std::string radioSendAndReceive(int radio_sock, const json &dataToSend, int buf_len) {
+    std::string lastReceived;
     // Serialize JSON data to string and send it
     std::string message = dataToSend.dump();
     send(radio_sock, message.c_str(), message.length(), 0);
@@ -31,15 +31,15 @@ std::string radioSendAndReceive(int radio_sock, const json &dataToSend, int buf_
     }
 
     // If the data is not the same as last received, process it
-    // if (received_data != lastReceived) {
-    //     lastReceived = received_data;
-    //     std::cout << "Received new data: " << received_data << std::endl;
-    // }
-    return received_data;
+    if (received_data != lastReceived) {
+        lastReceived = received_data;
+        return lastReceived;
+        // std::cout << "Received new data: " << received_data << std::endl;
+    }
+    return "no new data";
 }
 
 std::string getPerBeamRSS() {
-    // radio connection parameters
     std::string radio_ip = "200.239.93.46";
     int radio_port = 8000;
     int measurement_time = 1; // Time in seconds
@@ -78,24 +78,22 @@ std::string getPerBeamRSS() {
     per_beam_rss_cmd["cmd"] = "per_beam_rss_v2x";
     per_beam_rss_cmd["args"] = {};
 
-    std::string lastReceivedData;
     int counter = 0;
     std::string received_data;
     // auto end_time = std::chrono::steady_clock::now() + std::chrono::seconds(measurement_time);
 
-    // Main loop to send commands and receive responses
     try {
         counter++;
         // Send start_scan command and receive response
         std::cout << "Sending start_scan command..." << std::endl;
-        radioSendAndReceive(radio_sock, start_scan_cmd, BUFFER_SIZE, lastReceivedData);
+        radioSendAndReceive(radio_sock, start_scan_cmd, BUFFER_SIZE);
 
         // Short sleep before the next command
         std::this_thread::sleep_for(std::chrono::milliseconds(measurement_interval/2));
 
         // Send per_beam_rss command and receive response
         std::cout << "Sending per_beam_rss_v2x command..." << std::endl;
-        received_data = radioSendAndReceive(radio_sock, per_beam_rss_cmd, BUFFER_SIZE, lastReceivedData);
+        received_data = radioSendAndReceive(radio_sock, per_beam_rss_cmd, BUFFER_SIZE);
 
         // Sleep for the remaining half of the interval
         // std::this_thread::sleep_for(std::chrono::milliseconds(measurement_interval/2));
@@ -103,7 +101,6 @@ std::string getPerBeamRSS() {
         std::cerr << "Exception occurred: " << e.what() << std::endl;
     }
 
-    // Close the socket connection
     close(radio_sock);
     std::cout << "Connection closed." << std::endl;
 
