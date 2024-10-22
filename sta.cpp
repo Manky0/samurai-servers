@@ -1,107 +1,57 @@
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
-#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
+#include <cstdint>
+#include <chrono>
+#include <thread>
 
 #include "sta.h"
+#include "client.h"
 
-#define PORT 8000
+#define SLEEP_TIME 200 // Time between messages (ms)
 
-enum Command : uint8_t {
-    START_MEASUREMENTS = 0x01,
-    CAPTURE_IMAGE = 0x02,
-    MOVE_FORWARD = 0x0E,
-    MOVE_BACKWARD = 0x0F,
-};
+#define IP_SERVER "127.0.0.1"
+#define PORT_SERVER 8000
 
-int main() {
-    int server_fd, new_socket;
-    struct sockaddr_in address;
-    int addrlen = sizeof(address);
-    uint8_t command;
-    char response[1024];
-    int opt = 1;
+#define IP_RADIO "200.239.93.46"
+#define PORT_RADIO 8000
 
-    // Create socket file descriptor
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        std::cerr << "Socket creation failed" << std::endl;
-        return -1;
-    }
+int main(int argc, char *argv[]) {
 
-    // Set SO_REUSEADDR to allow reuse of the port
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-        std::cerr << "Set socket options failed" << std::endl;
-        close(server_fd);
-        return -1;
-    }
+    try {
+        char response[1024];
 
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(PORT);
+        int sock = connectWithServer(IP_SERVER, PORT_SERVER);
+        int radio_sock = connectWithServer(IP_RADIO, PORT_RADIO);
 
-    // Bind the socket to the network address and port
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        std::cerr << "Bind failed" << std::endl;
-        close(server_fd);
-        return -1;
-    }
-
-    // Listen for incoming connections
-    if (listen(server_fd, 3) < 0) {
-        std::cerr << "Listen failed" << std::endl;
-        close(server_fd);
-        return -1;
-    }
-
-    std::cout << "Server started on port " << PORT << std::endl;
-
-    while (true) {
-        // Accept incoming connection
-        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
-            std::cerr << "Accept failed" << std::endl;
-            continue; // Skip this iteration and wait for the next connection
-        }
+        std::cout << "Succesfully connected to Orquestrator and Mikrotik" << std::endl << std::endl;
 
         std::string currBeamRSS;
+        char buffer[1024] = {0};
 
-        // Read the command (1 byte) from the client
-        int bytes_read = read(new_socket, &command, sizeof(command));
+        while(1){
+            // Get radio data
+            currBeamRSS = getPerBeamRSS(radio_sock);
+            strcpy(response, currBeamRSS.c_str());
 
-        if (bytes_read > 0) {
-            switch (command) {
-                case START_MEASUREMENTS:
-                    currBeamRSS = getPerBeamRSS();
-                    strcpy(response, currBeamRSS.c_str());
-                    break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME)); // Wait to send more data
 
-                case CAPTURE_IMAGE:
-                    strcpy(response, "Capturing image");
-                    break;
+            send(sock, response, strlen(response), 0); // Send message to server
 
-                case MOVE_FORWARD:
-                    strcpy(response, "Moving forward");
-                    break;
-
-                case MOVE_BACKWARD:
-                    strcpy(response, "Moving backward");
-                    break;
-
-                default:
-                    strcpy(response, "Unknown command");
-                    break;
-            }
-
-            send(new_socket, response, strlen(response), 0);
-            // std::cout << "Response sent to client: " << response << std::endl;
-        } else {
-            std::cerr << "Failed to read from client" << std::endl;
+            // read(sock, buffer, 1024); // Read response from server
+            // std::cout << buffer << std::endl;
         }
-
-        close(new_socket);
-        std::cout << "\n";
+        
+        close(sock);
+        close(radio_sock);
+        std::cout << std::endl << "Connections closed";
+        
+    } catch (const std::invalid_argument &e) {
+        std::cerr << e.what() << std::endl;
+        return -1;
     }
 
-    close(server_fd);
     return 0;
 }

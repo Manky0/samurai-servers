@@ -1,8 +1,8 @@
-## Commands:
+Orquestrator acts as a TCP server
 
-```
-0x01: start measurements (STA radio)
-0x02: capture image (cam)
-0x0E: move foward (robot)
-0x0F: move backward (robot)
-```
+STA is a client, sending messages from time to time (for now, 200ms)
+
+TODO:
+- Transform snr_data to rss_data (like the python code)
+- Get cam images
+- Improve file generation when parsing to CSV

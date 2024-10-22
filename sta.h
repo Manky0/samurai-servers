@@ -1,4 +1,3 @@
-#include <string>
 #include <cstring>
 
-std::string getPerBeamRSS();
+std::string getPerBeamRSS(int radio_sock);
