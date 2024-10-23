@@ -7,14 +7,12 @@
 
 using json = nlohmann::json;
 
-void saveToCsv(char *buffer) {
+void saveToCsv(json data) {
     try {
-            json jsonData = json::parse(buffer);
-
             // Extract 'columns'
-            uint64_t mac_addr = jsonData["mac_addr"];
-            std::vector<int> snr_data = jsonData["snr_data"];
-            uint64_t timestamp = jsonData["timestamp"];
+            uint64_t mac_addr = data["mac_addr"];
+            std::vector<int> snr_data = data["snr_data"];
+            uint64_t timestamp = data["timestamp"];
 
             std::string filename = std::to_string(mac_addr) + ".csv";
 

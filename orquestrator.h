@@ -1,1 +1,5 @@
-void saveToCsv(char *buffer);
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
+void saveToCsv(json data);

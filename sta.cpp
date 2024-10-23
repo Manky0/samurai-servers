@@ -10,7 +10,7 @@
 #include "sta.h"
 #include "client.h"
 
-#define SLEEP_TIME 200 // Time between messages (ms)
+#define SLEEP_TIME 200 // Interval time between messages (ms)
 
 #define IP_SERVER "127.0.0.1"
 #define PORT_SERVER 8000

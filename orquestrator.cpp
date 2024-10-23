@@ -5,6 +5,9 @@
 #include <unistd.h>
 #include <thread>
 #include <vector>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 #include "orquestrator.h"
 
@@ -24,9 +27,16 @@ void handleClient(int client_socket) {
             break;
         }
 
-        std::cout << buffer << std::endl << std::endl;
+        std::cout << buffer << std::endl << std::endl; // Print received data
 
-        saveToCsv(buffer); // Parse buffer to JSON and save values
+        json received_data = json::parse(buffer);
+
+        if (received_data["device"] == "radio"){ // Save RSSI data to CSV
+            saveToCsv(received_data["data"]);
+
+        } else if (received_data["device"] == "camera") {
+
+        }
     
         // Send response to client
         // const char* response = "Message received";
@@ -40,13 +50,13 @@ int main() {
     int addrlen = sizeof(address);
     int opt = 1;
 
-    // create socket
+    // Create socket
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         std::cerr << "Socket creation failed" << std::endl;
         return -1;
     }
 
-    // allow reuse of the port
+    // Allow reuse of the port
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         std::cerr << "Set socket options failed" << std::endl;
         close(server_fd);
@@ -57,7 +67,7 @@ int main() {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
 
-    // bind socket to ip and port
+    // Bind socket to ip and port
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         std::cerr << "Bind failed" << std::endl;
         close(server_fd);
