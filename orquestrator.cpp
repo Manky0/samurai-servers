@@ -11,31 +11,63 @@ using json = nlohmann::json;
 
 #include "orquestrator.h"
 
-#define PORT 8000
+#define PORT 3990
+
+ssize_t readNBytes(int sock, char *buffer, size_t n) {
+    size_t bytesRead = 0;
+    while (bytesRead < n) {
+        ssize_t result = read(sock, buffer + bytesRead, n - bytesRead);
+        if (result <= 0) return result;
+        bytesRead += result;
+    }
+    return bytesRead;
+}
 
 void handleClient(int client_socket) {
-    char buffer[1024] = {0};
+    char sizeBuffer[sizeof(int32_t)];
     
-    while (true) {
-        memset(buffer, 0, sizeof(buffer)); // Clear buffer
-
-        int bytes_read = read(client_socket, buffer, 1024); // Read from client
-        
-        if (bytes_read <= 0) {
+    while (1) {
+        // Read the size of the incoming data
+        int bytesRead = readNBytes(client_socket, sizeBuffer, sizeof(int32_t));
+        if (bytesRead <= 0) {
             std::cerr << "Client disconnected." << std::endl << std::endl;
             close(client_socket);
             break;
         }
 
-        std::cout << buffer << std::endl << std::endl; // Print received data
+        // Convert size buffer to integer
+        int32_t dataSize;
+        memcpy(&dataSize, sizeBuffer, sizeof(int32_t));
+        dataSize = ntohl(dataSize); // Network to host byte order
 
-        json received_data = json::parse(buffer);
+        // Read the data based
+        std::vector<char> buffer(dataSize + 1, 0); // Allocate buffer for data
+        bytesRead = readNBytes(client_socket, buffer.data(), dataSize);
+        if (bytesRead <= 0) {
+            std::cerr << "Failed to read data from client." << std::endl;
+            close(client_socket);
+            break;
+        }
 
-        if (received_data["device"] == "radio"){ // Save RSSI data to CSV
-            saveToCsv(received_data["data"]);
+        buffer[dataSize] = '\0'; // null-terminated for safe handling
 
-        } else if (received_data["device"] == "camera") {
+        // std::cout << buffer.data() << std::endl << std::endl; // Print received data
 
+        try {
+            json received_data = json::parse(buffer.data());
+            // Save RSSI data to CSV
+            if (received_data["device"] == "radio") {
+                std::cout << "Received RSS data." << std::endl;
+                saveToCsv(received_data["data"]);
+
+            // Save image
+            } else if (received_data["device"] == "cam") {
+                std::cout << "Received cam data." << std::endl;
+                saveToJpeg(received_data["data"]);
+
+            }
+        } catch (const json::parse_error &e) {
+            std::cerr << "JSON parse error: " << e.what() << std::endl;
         }
     
         // Send response to client
