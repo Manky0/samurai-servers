@@ -7,11 +7,10 @@ using json = nlohmann::json;
 
 #include "../orquestrator.h"
 
-using json = nlohmann::json;
-
 void saveToJpeg(json data) {
     try {
-        std::vector<uchar> img_data = data;
+        std::vector<uchar> img_data = data["data"];
+        
         // // Decode the compressed image back to cv::Mat
         cv::Mat img = cv::imdecode(img_data, cv::IMREAD_COLOR);
 

@@ -23,6 +23,16 @@ ssize_t readNBytes(int sock, char *buffer, size_t n) {
     return bytesRead;
 }
 
+json completeData (json data) {
+    // Get timestamp with ms precision
+    const auto now = std::chrono::system_clock::now();
+    const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+
+    data["received_at"] = timestamp;
+
+    return data;
+}
+
 void handleClient(int client_socket) {
     char sizeBuffer[sizeof(int32_t)];
     
@@ -55,15 +65,17 @@ void handleClient(int client_socket) {
 
         try {
             json received_data = json::parse(buffer.data());
+            json complete_data = completeData(received_data); // Add receive info
+
             // Save RSSI data to CSV
-            if (received_data["device"] == "radio") {
+            if (complete_data["device"] == "radio") {
                 std::cout << "Received RSS data." << std::endl;
-                saveToCsv(received_data["data"]);
+                saveToCsv(complete_data);
 
             // Save image
-            } else if (received_data["device"] == "cam") {
+            } else if (complete_data["device"] == "cam") {
                 std::cout << "Received cam data." << std::endl;
-                saveToJpeg(received_data["data"]);
+                saveToJpeg(complete_data);
 
             }
         } catch (const json::parse_error &e) {

@@ -25,11 +25,23 @@ using json = nlohmann::json;
 #define PORT_RADIO 8000
 
 
-void sendData (int socket, const std::string data) {
-    uint32_t dataSize = htonl(data.size());
+void sendData (int socket, std::string data, std::string device_type) {
+    // Get timestamp with ms precision
+    const auto now = std::chrono::system_clock::now();
+    const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+
+    json data_json;
+    data_json["captured_at"] = timestamp;
+    data_json["device"] = device_type;
+    data_json["data"] = json::parse(data.data());
+
+    std::string data_send = data_json.dump();
+    // std::cout << data_send << std::endl;
+
+    uint32_t dataSize = htonl(data_send.size());
     send(socket, &dataSize, sizeof(dataSize), 0); // Send data size
 
-    send(socket, data.c_str(), data.size(), 0); // Send data
+    send(socket, data_send.c_str(), data_send.size(), 0); // Send data
 }
 
 int main(int argc, char *argv[]) {
@@ -43,29 +55,28 @@ int main(int argc, char *argv[]) {
 
         // Connect to camera and set resolution
         cv::VideoCapture cap(-1);
-         // // Check if the camera opened successfully
-        // if (!cap.isOpened()) {
-        //     std::cerr << "Error: Could not open camera" << std::endl;
-        //     return -1;
-        // }
+        if (!cap.isOpened()) {
+            std::cerr << "Error: Could not open camera" << std::endl;
+            return -1;
+        }
         cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
         cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
 
         std::string currBeamRSS;
 
         while(1){
-            currBeamRSS = getPerBeamRSS(radio_sock); // Get radio data
-
-            sendData(orq_sock, currBeamRSS); // Send rss data to server
+            // Get radio data
+            currBeamRSS = getPerBeamRSS(radio_sock);
+            sendData(orq_sock, currBeamRSS, "radio"); // Send rss data to server
 
             // Get camera frame
             std::vector<uchar> frame = getCamFrame(cap);
-            json camResponseJSON;
-            camResponseJSON["device"] = "cam";
-            camResponseJSON["data"] = frame;
-            std::string camResponse = camResponseJSON.dump();
 
-            sendData(orq_sock, camResponse); // Send cam data to server
+            // TODO: find a better way to parse from vector to string
+            json frameJSON;
+            frameJSON["frame"] = frame;
+
+            sendData(orq_sock, frameJSON["frame"].dump(), "cam"); // Send cam data to server
 
             std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME)); // Wait to send more data
 
