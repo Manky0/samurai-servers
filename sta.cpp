@@ -15,10 +15,10 @@ using json = nlohmann::json;
 #include "sta.h"
 #include "client.h"
 
-#define SLEEP_TIME 200 // Interval time between messages (ms)
+#define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 
-#define IP_SERVER "127.0.0.1"
-// #define IP_SERVER "200.239.93.192" // Orquestrator
+// #define IP_SERVER "127.0.0.1"
+#define IP_SERVER "200.239.93.191" // Orquestrator
 #define PORT_SERVER 3990
 
 #define IP_RADIO "200.239.93.46" // Mikrotik
@@ -47,11 +47,21 @@ void sendData (int socket, std::string data, std::string device_type) {
 int main(int argc, char *argv[]) {
 
     try {
-        // Connect with servers
+        // Connect with orquestrator
         int orq_sock = connectWithServer(IP_SERVER, PORT_SERVER);
-        int radio_sock = connectWithServer(IP_RADIO, PORT_RADIO);
+        if(orq_sock == -1){
+            std::cerr << "Error: Could not connect to server at " << IP_SERVER << std::endl;
+            return -1;
+        }
 
-        std::cout << "Succesfully connected to Orquestrator and Mikrotik" << std::endl << std::endl;
+        // Connect with STA radio
+        int radio_sock = connectWithServer(IP_RADIO, PORT_RADIO);
+        if(radio_sock == -1){
+            std::cerr << "Error: Could not connect to radio at " << IP_RADIO << std::endl;
+            return -1;
+        }
+
+        std::cout << "Succesfully connected to Orquestrator and STA radio" << std::endl << std::endl;
 
         // Connect to camera and set resolution
         cv::VideoCapture cap(-1);
@@ -63,6 +73,10 @@ int main(int argc, char *argv[]) {
         cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
 
         std::string currBeamRSS;
+
+        auto const start_time = std::chrono::steady_clock::now();
+        auto const wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
+        auto next_time = start_time + wait_time;
 
         while(1){
             // Get radio data
@@ -78,7 +92,10 @@ int main(int argc, char *argv[]) {
 
             sendData(orq_sock, frameJSON["frame"].dump(), "cam"); // Send cam data to server
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME)); // Wait to send more data
+            std::this_thread::sleep_until(next_time);
+            next_time += wait_time; // increment absolute time
+
+            // std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME)); // Wait to send more data
 
             // read(orq_sock, buffer, 1024); // Read response from server
             // std::cout << buffer << std::endl;

@@ -54,7 +54,7 @@ std::string getPerBeamRSS(int radio_sock) {
     per_beam_rss_cmd["cmd"] = "per_beam_rss_v2x";
     per_beam_rss_cmd["args"] = {};
 
-    json response;
+    std::string response;
 
     try { // Send commands and receive response
         std::cout << "Sending start_scan command..." << std::endl;
