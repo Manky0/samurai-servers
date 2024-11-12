@@ -34,59 +34,64 @@ json completeData (json data) {
 }
 
 void handleClient(int client_socket) {
-    char sizeBuffer[sizeof(int32_t)];
-    
     while (1) {
-        // Read the size of the incoming data
-        int bytesRead = readNBytes(client_socket, sizeBuffer, sizeof(int32_t));
+        // Read the header (4 bytes for size + 8 bytes for timestamp)
+        const size_t header_size = sizeof(uint32_t) + sizeof(uint64_t);
+        std::vector<char> headerBuffer(header_size);
+
+        // Read header first
+        ssize_t bytesRead = readNBytes(client_socket, headerBuffer.data(), header_size);
         if (bytesRead <= 0) {
-            std::cerr << "Client disconnected." << std::endl << std::endl;
+            std::cerr << "Client disconnected." << std::endl;
             close(client_socket);
             break;
         }
 
-        // Convert size buffer to integer
-        int32_t dataSize;
-        memcpy(&dataSize, sizeBuffer, sizeof(int32_t));
-        dataSize = ntohl(dataSize); // Network to host byte order
+        // Extract data size and timestamp from header
+        uint32_t dataSize;
+        memcpy(&dataSize, headerBuffer.data(), sizeof(dataSize));
+        dataSize = ntohl(dataSize);
 
-        // Read the data based
-        std::vector<char> buffer(dataSize + 1, 0); // Allocate buffer for data
-        bytesRead = readNBytes(client_socket, buffer.data(), dataSize);
+        uint64_t timestamp;
+        memcpy(&timestamp, headerBuffer.data() + sizeof(dataSize), sizeof(timestamp));
+        timestamp = be64toh(timestamp);
+
+        // Read the data based on dataSize
+        std::vector<char> dataBuffer(dataSize);
+        bytesRead = readNBytes(client_socket, dataBuffer.data(), dataSize);
         if (bytesRead <= 0) {
             std::cerr << "Failed to read data from client." << std::endl;
             close(client_socket);
             break;
         }
 
-        buffer[dataSize] = '\0'; // null-terminated for safe handling
-
-        // std::cout << buffer.data() << std::endl << std::endl; // Print received data
+        // dataBuffer[dataSize] = '\0'; // null-terminated for safe handling
 
         try {
-            json received_data = json::parse(buffer.data());
-            json complete_data = completeData(received_data); // Add receive info
+            std::vector<unsigned char> img_data(dataBuffer.begin(), dataBuffer.end());
 
-            // Save RSSI data to CSV
-            if (complete_data["device"] == "radio") {
-                std::cout << "Received RSS data." << std::endl;
-                saveToCsv(complete_data);
+            // Parse the data as JSON
+            json received_data;
+            received_data["data"] = img_data;
+            received_data["captured_at"] = timestamp;
 
-            // Save image
-            } else if (complete_data["device"] == "cam") {
-                std::cout << "Received cam data." << std::endl;
-                saveToJpeg(complete_data);
+            json complete_data = completeData(received_data);
 
-            }
+            // if (received_data["device"] == "radio") {
+            //     std::cout << "Received RSS data." << std::endl;
+            //     saveToCsv(received_data);
+            // } else if (received_data["device"] == "cam") {
+            //     std::cout << "Received cam data." << std::endl;
+            //     saveToJpeg(received_data);
+            // }
+
+            saveToJpeg(complete_data);
         } catch (const json::parse_error &e) {
             std::cerr << "JSON parse error: " << e.what() << std::endl;
         }
-    
-        // Send response to client
-        // const char* response = "Message received";
-        // send(client_socket, response, strlen(response), 0);
     }
 }
+
 
 int main() {
     int server_fd;

@@ -17,8 +17,8 @@ using json = nlohmann::json;
 
 #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 
-// #define IP_SERVER "127.0.0.1"
-#define IP_SERVER "200.239.93.191" // Orquestrator
+#define IP_SERVER "127.0.0.1"
+// #define IP_SERVER "200.239.93.191" // Orquestrator
 #define PORT_SERVER 3990
 
 #define IP_RADIO "200.239.93.46" // Mikrotik
@@ -30,18 +30,25 @@ void sendData (int socket, std::string data, std::string device_type) {
     const auto now = std::chrono::system_clock::now();
     const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 
-    json data_json;
-    data_json["captured_at"] = timestamp;
-    data_json["device"] = device_type;
-    data_json["data"] = json::parse(data.data());
+    // Prepare message structure
+    uint32_t dataSize = htonl(data.size());
+    uint64_t timestamp_net = htobe64(timestamp);
 
-    std::string data_send = data_json.dump();
-    // std::cout << data_send << std::endl;
+    // Create buffer to hold the entire message
+    std::vector<char> message(sizeof(dataSize) + sizeof(timestamp_net) + data.size());
+    memcpy(message.data(), &dataSize, sizeof(dataSize)); // data size
+    memcpy(message.data() + sizeof(dataSize), &timestamp_net, sizeof(timestamp_net)); // timestamp
+    memcpy(message.data() + sizeof(dataSize) + sizeof(timestamp_net), data.c_str(), data.size()); // data
 
-    uint32_t dataSize = htonl(data_send.size());
-    send(socket, &dataSize, sizeof(dataSize), 0); // Send data size
+    // Send the complete message at once
+    send(socket, message.data(), message.size(), 0);
 
-    send(socket, data_send.c_str(), data_send.size(), 0); // Send data
+    
+
+    // uint32_t dataSize = htonl(data_send.size());
+    // send(socket, &dataSize, sizeof(dataSize), 0); // Send data size
+
+    // send(socket, data_send.c_str(), data_send.size(), 0); // Send data
 }
 
 int main(int argc, char *argv[]) {
@@ -55,11 +62,11 @@ int main(int argc, char *argv[]) {
         }
 
         // Connect with STA radio
-        int radio_sock = connectWithServer(IP_RADIO, PORT_RADIO);
-        if(radio_sock == -1){
-            std::cerr << "Error: Could not connect to radio at " << IP_RADIO << std::endl;
-            return -1;
-        }
+        // int radio_sock = connectWithServer(IP_RADIO, PORT_RADIO);
+        // if(radio_sock == -1){
+        //     std::cerr << "Error: Could not connect to radio at " << IP_RADIO << std::endl;
+        //     return -1;
+        // }
 
         std::cout << "Succesfully connected to Orquestrator and STA radio" << std::endl << std::endl;
 
@@ -72,37 +79,29 @@ int main(int argc, char *argv[]) {
         cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
         cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
 
-        std::string currBeamRSS;
-
+        
         auto const start_time = std::chrono::steady_clock::now();
         auto const wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
         auto next_time = start_time + wait_time;
 
         while(1){
             // Get radio data
-            currBeamRSS = getPerBeamRSS(radio_sock);
-            sendData(orq_sock, currBeamRSS, "radio"); // Send rss data to server
+            // std::string currBeamRSS = getPerBeamRSS(radio_sock);
+            
+            // sendData(orq_sock, currBeamRSS, "radio"); // Send rss data to server
 
             // Get camera frame
             std::vector<uchar> frame = getCamFrame(cap);
+            std::string frame_str(frame.begin(), frame.end());
 
-            // TODO: find a better way to parse from vector to string
-            json frameJSON;
-            frameJSON["frame"] = frame;
-
-            sendData(orq_sock, frameJSON["frame"].dump(), "cam"); // Send cam data to server
+            sendData(orq_sock, frame_str, "cam"); // Send cam data to server
 
             std::this_thread::sleep_until(next_time);
             next_time += wait_time; // increment absolute time
-
-            // std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME)); // Wait to send more data
-
-            // read(orq_sock, buffer, 1024); // Read response from server
-            // std::cout << buffer << std::endl;
         }
         
         close(orq_sock);
-        close(radio_sock);
+        // close(radio_sock);
         std::cout << std::endl << "Connections closed";
         
     } catch (const std::invalid_argument &e) {
