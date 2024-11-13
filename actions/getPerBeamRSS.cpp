@@ -57,10 +57,10 @@ std::string getPerBeamRSS(int radio_sock) {
     std::string response;
 
     try { // Send commands and receive response
-        std::cout << "Sending start_scan command..." << std::endl;
+        // std::cout << "Sending start_scan command..." << std::endl;
         radioSendAndReceive(radio_sock, start_scan_cmd, BUFFER_SIZE);
 
-        std::cout << "Sending per_beam_rss_v2x command..." << std::endl << std::endl;
+        // std::cout << "Sending per_beam_rss_v2x command..." << std::endl << std::endl;
         response = radioSendAndReceive(radio_sock, per_beam_rss_cmd, BUFFER_SIZE);
 
     } catch (const std::exception &e) {

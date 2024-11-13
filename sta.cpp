@@ -8,10 +8,7 @@
 #include <thread>
 #include <opencv2/opencv.hpp>
 #include <vector>
-#include <nlohmann/json.hpp>
 #include <librealsense2/rs.hpp> 
-
-using json = nlohmann::json;
 
 #include "sta.h"
 #include "client.h"
@@ -25,38 +22,6 @@ using json = nlohmann::json;
 #define IP_RADIO "200.239.93.45" // Mikrotik
 #define PORT_RADIO 8000
 
-
-void sendData (int socket, std::string data, std::string device_type) {
-    // Get timestamp with ms precision
-    const auto now = std::chrono::system_clock::now();
-    const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-
-    uint8_t device_type_byte;
-    if (device_type == "rss") {
-        device_type_byte = 0x01;
-    } else if (device_type == "rgb") {
-        device_type_byte = 0x02;
-    } else if (device_type == "depth") {
-        device_type_byte = 0x03;
-    } else {
-        device_type_byte = 0xFF; // Unknown
-    }
-
-    // Prepare message structure
-    uint32_t dataSize = htonl(data.size());
-    uint64_t timestamp_net = htobe64(timestamp);
-
-    // Create buffer to hold the entire message
-    std::vector<char> message(sizeof(device_type_byte) + sizeof(dataSize) + sizeof(timestamp_net) + data.size());
-
-    memcpy(message.data(), &device_type_byte, sizeof(device_type_byte)); // device type
-    memcpy(message.data() + sizeof(device_type_byte), &dataSize, sizeof(dataSize)); // data size
-    memcpy(message.data() + sizeof(device_type_byte) + sizeof(dataSize), &timestamp_net, sizeof(timestamp_net)); // timestamp
-    memcpy(message.data() + sizeof(device_type_byte) + sizeof(dataSize) + sizeof(timestamp_net), data.c_str(), data.size()); // data
-
-    // Send the complete message at once
-    send(socket, message.data(), message.size(), 0);
-}
 
 int main(int argc, char *argv[]) {
 
@@ -87,7 +52,8 @@ int main(int argc, char *argv[]) {
 
         rs2::pipeline_profile profile = p.start(cfg);
 
-        rs2::device dev = profile.get_device();
+        rs2::device dev = profile.get_device();#include <nlohmann/json.hpp>
+
         rs2::depth_sensor depth_sensor = dev.first<rs2::depth_sensor>();
         float depth_scale = depth_sensor.get_depth_scale();
         std::cout << "RealSense Depth Scale is: " << depth_scale << std::endl;
