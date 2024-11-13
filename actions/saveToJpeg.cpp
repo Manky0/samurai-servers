@@ -2,8 +2,10 @@
 #include <iostream>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include <filesystem>
 
 using json = nlohmann::json;
+namespace fs = std::filesystem;
 
 #include "../orquestrator.h"
 
@@ -14,7 +16,17 @@ void saveToJpeg(json data) {
         uint64_t received_at = data["received_at"];
 
         std::string img_name = std::to_string(captured_at) + "_" + std::to_string(received_at) + ".jpg";
-        std::string img_path = "./images/" + img_name;
+
+        std::string dir_path;
+
+        if (data["type"] == 0x02){
+            dir_path = "./images/rgb/";
+        } else if (data["type"] == 0x03) {
+            dir_path = "./images/depth/";
+        }
+
+        fs::create_directories(dir_path);
+        std::string img_path = dir_path + img_name;
         
         // Decode the compressed image back to cv::Mat
         cv::Mat img = cv::imdecode(img_data, cv::IMREAD_COLOR);

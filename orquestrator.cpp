@@ -35,8 +35,8 @@ json completeData (json data) {
 
 void handleClient(int client_socket) {
     while (1) {
-        // Read the header (4 bytes for size + 8 bytes for timestamp)
-        const size_t header_size = sizeof(uint32_t) + sizeof(uint64_t);
+        // Read the header (1 byte for device type + 4 bytes for size + 8 bytes for timestamp)
+        const size_t header_size = sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint64_t);
         std::vector<char> headerBuffer(header_size);
 
         // Read header first
@@ -47,17 +47,20 @@ void handleClient(int client_socket) {
             break;
         }
 
-        // Extract data size and timestamp from header
+        // Extract device type, data size, and timestamp from header
+        uint8_t deviceType;
+        memcpy(&deviceType, headerBuffer.data(), sizeof(deviceType));
+
         uint32_t dataSize;
-        memcpy(&dataSize, headerBuffer.data(), sizeof(dataSize));
+        memcpy(&dataSize, headerBuffer.data() + sizeof(deviceType), sizeof(dataSize));
         dataSize = ntohl(dataSize);
 
         uint64_t timestamp;
-        memcpy(&timestamp, headerBuffer.data() + sizeof(dataSize), sizeof(timestamp));
+        memcpy(&timestamp, headerBuffer.data() + sizeof(deviceType) + sizeof(dataSize), sizeof(timestamp));
         timestamp = be64toh(timestamp);
 
         // Read the data based on dataSize
-        std::vector<char> dataBuffer(dataSize);
+        std::vector<char> dataBuffer(dataSize + 1, 0);
         bytesRead = readNBytes(client_socket, dataBuffer.data(), dataSize);
         if (bytesRead <= 0) {
             std::cerr << "Failed to read data from client." << std::endl;
@@ -65,33 +68,36 @@ void handleClient(int client_socket) {
             break;
         }
 
-        // dataBuffer[dataSize] = '\0'; // null-terminated for safe handling
-
         try {
-            std::vector<unsigned char> img_data(dataBuffer.begin(), dataBuffer.end());
-
             // Parse the data as JSON
             json received_data;
-            received_data["data"] = img_data;
             received_data["captured_at"] = timestamp;
 
-            json complete_data = completeData(received_data);
+            if (deviceType == 0x01) {
+                received_data["data"] = json::parse(dataBuffer.data());
+                json complete_data = completeData(received_data);
 
-            // if (received_data["device"] == "radio") {
-            //     std::cout << "Received RSS data." << std::endl;
-            //     saveToCsv(received_data);
-            // } else if (received_data["device"] == "cam") {
-            //     std::cout << "Received cam data." << std::endl;
-            //     saveToJpeg(received_data);
-            // }
+                std::cout << "Received RSS data." << std::endl;
+                saveToCsv(complete_data);
 
-            saveToJpeg(complete_data);
+            } else if (deviceType == 0x02 || deviceType == 0x03) { // If it is an image
+                std::vector<unsigned char> img_data(dataBuffer.begin(), dataBuffer.end()); // Convert buffer to uchar
+                received_data["data"] = img_data;
+                received_data["type"] = deviceType;
+                json complete_data = completeData(received_data);
+
+                std::cout << "Received image data" << std::endl;
+                saveToJpeg(complete_data);
+
+            } else {
+                std::cerr << "Unknown device type: " << static_cast<int>(deviceType) << std::endl;
+            }
+
         } catch (const json::parse_error &e) {
             std::cerr << "JSON parse error: " << e.what() << std::endl;
         }
     }
 }
-
 
 int main() {
     int server_fd;
