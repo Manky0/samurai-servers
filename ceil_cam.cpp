@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
             // Get RGB frame
             std::vector<uchar> frame = getCamFrame(cap);
             std::string frame_str(frame.begin(), frame.end());
-            sendData(orq_sock, frame_str, "rgb");
+            sendData(orq_sock, frame_str, "rgb_ceil");
 
             std::this_thread::sleep_until(next_time);
             next_time += wait_time; // increment absolute time

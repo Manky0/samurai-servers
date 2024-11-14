@@ -1,8 +1,11 @@
 Orquestrator acts as a TCP server
 
-STA is a client, sending messages from time to time (for now, 200ms)
+Clients are sending messages from time to time (200ms)
 
-TODO:
-- Transform snr_data to rss_data (like the python code)
-- Get cam images
-- Improve file generation when parsing to CSV
+### Message types
+- 0x01 = rss sta
+- 0x02 = rgb sta
+- 0x03 = depth sta
+- 0x04 = rgb ap
+- 0x05 = ...
+- 0x06 = rgb ceil

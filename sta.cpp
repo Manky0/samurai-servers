@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
         rs2::pipeline_profile profile = p.start(cfg);
 
-        rs2::device dev = profile.get_device();#include <nlohmann/json.hpp>
+        rs2::device dev = profile.get_device();
 
         rs2::depth_sensor depth_sensor = dev.first<rs2::depth_sensor>();
         float depth_scale = depth_sensor.get_depth_scale();
@@ -68,17 +68,17 @@ int main(int argc, char *argv[]) {
         while(1){
             // Get radio data
             std::string currBeamRSS = getPerBeamRSS(radio_sock);
-            sendData(orq_sock, currBeamRSS, "rss"); // Send rss data to server
+            sendData(orq_sock, currBeamRSS, "rss_sta"); // Send rss data to server
 
             // Get RGB frame
             std::vector<uchar> rgb_frame = getRGB(p, align_to_color);
             std::string rgb_str(rgb_frame.begin(), rgb_frame.end());
-            sendData(orq_sock, rgb_str, "rgb");
+            sendData(orq_sock, rgb_str, "rgb_sta");
 
             // Get Depth frame
             std::vector<uchar> depth_frame = getDepth(p, align_to_color);
             std::string depth_str(depth_frame.begin(), depth_frame.end());
-            sendData(orq_sock, depth_str, "depth");
+            sendData(orq_sock, depth_str, "depth_sta");
 
             std::this_thread::sleep_until(next_time);
             next_time += wait_time; // increment absolute time

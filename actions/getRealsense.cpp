@@ -51,7 +51,7 @@ std::vector<uchar> getDepth(rs2::pipeline p, rs2::align align_to_color) {
         // Convert depth image to an 8-bit image for display purposes
         cv::Mat depth_colormap;
         cv::convertScaleAbs(depth_image, depth_colormap, 0.03);
-        cv::applyColorMap(depth_colormap, depth_colormap, cv::COLORMAP_JET);
+        cv::applyColorMap(depth_colormap, depth_colormap, cv::COLORMAP_PARULA);
 
         std::vector<uchar> buf;
         std::vector<int> compression_params = {cv::IMWRITE_JPEG_QUALITY, 60}; // Adjust compression quality

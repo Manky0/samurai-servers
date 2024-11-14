@@ -20,9 +20,13 @@ void saveToJpeg(json data) {
         std::string dir_path;
 
         if (data["type"] == 0x02){
-            dir_path = "./images/rgb/";
+            dir_path = "./images/rgb_sta/";
         } else if (data["type"] == 0x03) {
-            dir_path = "./images/depth/";
+            dir_path = "./images/depth_sta/";
+        } else if (data["type"] == 0x04) {
+            dir_path = "./images/rgb_ap/";
+        } else if (data["type"] == 0x06) {
+            dir_path = "./images/rgb_ceil/";
         }
 
         fs::create_directories(dir_path);

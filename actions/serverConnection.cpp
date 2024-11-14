@@ -38,12 +38,16 @@ void sendData (int socket, std::string data, std::string device_type) {
     const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 
     uint8_t device_type_byte;
-    if (device_type == "rss") {
+    if (device_type == "rss_sta") {
         device_type_byte = 0x01;
-    } else if (device_type == "rgb") {
+    } else if (device_type == "rgb_sta") {
         device_type_byte = 0x02;
-    } else if (device_type == "depth") {
+    } else if (device_type == "depth_sta") {
         device_type_byte = 0x03;
+    } else if (device_type == "rgb_ap") {
+        device_type_byte = 0x04;
+    } else if (device_type == "rgb_ceil") {
+        device_type_byte = 0x06;
     } else {
         device_type_byte = 0xFF; // Unknown
     }
@@ -58,8 +62,8 @@ void sendData (int socket, std::string data, std::string device_type) {
     memcpy(message.data(), &device_type_byte, sizeof(device_type_byte)); // device type
     memcpy(message.data() + sizeof(device_type_byte), &dataSize, sizeof(dataSize)); // data size
     memcpy(message.data() + sizeof(device_type_byte) + sizeof(dataSize), &timestamp_net, sizeof(timestamp_net)); // timestamp
-    memcpy(message.data() + sizeof(device_type_byte) + sizeof(dataSize) + sizeof(timestamp_net), data.c_str(), data.size()); // data
+    memcpy(message.data() + sizeof(device_type_byte) + sizeof(dataSize) + sizeof(timestamp_net), data.c_str(), data.size()); // data payload
 
-    // Send the complete message at once
+    // Send the complete message
     send(socket, message.data(), message.size(), 0);
 }
