@@ -66,22 +66,32 @@ int main(int argc, char *argv[]) {
         auto next_time = start_time + wait_time;
 
         while(1){
-            // Get radio data
-            std::string currBeamRSS = getPerBeamRSS(radio_sock);
-            sendData(orq_sock, currBeamRSS, "rss_sta"); // Send rss data to server
+            int measure_times = listenToServer(orq_sock);
+            if ( measure_times == 0 ) break;
 
-            // Get RGB frame
-            std::vector<uchar> rgb_frame = getRGB(p, align_to_color);
-            std::string rgb_str(rgb_frame.begin(), rgb_frame.end());
-            sendData(orq_sock, rgb_str, "rgb_sta");
+            for (int i = 0; i < measure_times; i++) {
+                // Get radio data
+                std::string currBeamRSS = getPerBeamRSS(radio_sock);
+                sendData(orq_sock, currBeamRSS, "rss_sta"); // Send rss data to server
 
-            // Get Depth frame
-            std::vector<uchar> depth_frame = getDepth(p, align_to_color);
-            std::string depth_str(depth_frame.begin(), depth_frame.end());
-            sendData(orq_sock, depth_str, "depth_sta");
+                // Get RGB frame
+                // std::vector<uchar> frame = getCamFrame(cap);
+                // std::string frame_str(frame.begin(), frame.end());
+                // sendData(orq_sock, frame_str, "rgb_sta");
 
-            std::this_thread::sleep_until(next_time);
-            next_time += wait_time; // increment absolute time
+                // Get RGB frame
+                std::vector<uchar> rgb_frame = getRGB(p, align_to_color);
+                std::string rgb_str(rgb_frame.begin(), rgb_frame.end());
+                sendData(orq_sock, rgb_str, "rgb_sta");
+
+                // Get Depth frame
+                std::vector<uchar> depth_frame = getDepth(p, align_to_color);
+                std::string depth_str(depth_frame.begin(), depth_frame.end());
+                sendData(orq_sock, depth_str, "depth_sta");
+
+                std::this_thread::sleep_until(next_time);
+                next_time += wait_time; // increment absolute time
+            }
         }
         
         close(orq_sock);

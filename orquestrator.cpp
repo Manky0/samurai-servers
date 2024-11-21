@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <thread>
 #include <vector>
+#include <mutex>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -12,6 +13,9 @@ using json = nlohmann::json;
 #include "orquestrator.h"
 
 #define PORT 3990
+
+std::mutex clients_mutex;
+std::vector<int> client_sockets;
 
 ssize_t readNBytes(int sock, char *buffer, size_t n) {
     size_t bytesRead = 0;
@@ -34,6 +38,13 @@ json completeData (json data) {
 }
 
 void handleClient(int client_socket) {
+    // Add client to list
+    {
+        std::lock_guard<std::mutex> lock(clients_mutex);
+        client_sockets.push_back(client_socket);
+    }
+
+    
     while (1) {
         // Read the header (1 byte for device type + 4 bytes for size + 8 bytes for timestamp)
         const size_t header_size = sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint64_t);
@@ -42,6 +53,10 @@ void handleClient(int client_socket) {
         // Read header first
         ssize_t bytesRead = readNBytes(client_socket, headerBuffer.data(), header_size);
         if (bytesRead <= 0) {
+            {
+                std::lock_guard<std::mutex> lock(clients_mutex);
+                client_sockets.erase(std::remove(client_sockets.begin(), client_sockets.end(), client_socket), client_sockets.end());
+            }   
             std::cerr << "Client disconnected." << std::endl;
             close(client_socket);
             break;
@@ -97,10 +112,31 @@ void handleClient(int client_socket) {
             std::cerr << "JSON parse error: " << e.what() << std::endl;
         }
     }
+
+    
+}
+
+void sendToAllClients(const std::string& message) {
+    std::lock_guard<std::mutex> lock(clients_mutex);
+    for (int client_socket : client_sockets) {
+        send(client_socket, message.c_str(), message.size(), 0);
+    }
+}
+
+void controlServer() {
+    std::cout << "When all clients are connected, type how many measurements you want." << std::endl;
+
+    while (true) {
+        std::string command;
+        std::cin >> command;
+
+        json start_message = {{"command", command}};
+        sendToAllClients(start_message.dump());        
+    }
 }
 
 int main() {
-    int server_fd;
+    int server_fd, client_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     int opt = 1;
@@ -137,23 +173,21 @@ int main() {
 
     std::cout << "Server started on port " << PORT << std::endl;
 
-    std::vector<std::thread> threads;
+    // Thread for manual commands
+    std::thread control_thread(controlServer);
 
     // Accept multiple clients
-    while (true) {
-        int client_socket;
+    while (1) {
         if ((client_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
             std::cerr << "Accept failed" << std::endl;
             continue;
         }
+        std::cout << "Client connected" << std::endl;
 
-        std::cout << "Client connected" << std::endl << std::endl;
-
-        // Create a new thread for each client
-        threads.push_back(std::thread(handleClient, client_socket));
-        threads.back().detach();  // Detach the thread so it runs independently
+        std::thread(handleClient, client_socket).detach();
     }
 
+    control_thread.join();
     close(server_fd);
     return 0;
 }

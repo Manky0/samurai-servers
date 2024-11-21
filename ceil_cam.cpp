@@ -8,6 +8,9 @@
 #include <thread>
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 #include "sta.h"
 #include "client.h"
@@ -17,7 +20,6 @@
 #define IP_SERVER "127.0.0.1"
 // #define IP_SERVER "200.239.93.191" // Orquestrator
 #define PORT_SERVER 3990
-
 
 int main(int argc, char *argv[]) {
 
@@ -46,17 +48,23 @@ int main(int argc, char *argv[]) {
         auto next_time = start_time + wait_time;
 
         while(1){
-            // Get RGB frame
-            std::vector<uchar> frame = getCamFrame(cap);
-            std::string frame_str(frame.begin(), frame.end());
-            sendData(orq_sock, frame_str, "rgb_ceil");
+            int measure_times = listenToServer(orq_sock);
+            if ( measure_times == 0 ) break;
 
-            std::this_thread::sleep_until(next_time);
-            next_time += wait_time; // increment absolute time
+
+            for (int i = 0; i < measure_times; i++) {
+                // Get RGB frame
+                std::vector<uchar> frame = getCamFrame(cap);
+                std::string frame_str(frame.begin(), frame.end());
+                sendData(orq_sock, frame_str, "rgb_ceil");
+
+                std::this_thread::sleep_until(next_time);
+                next_time += wait_time; // increment absolute time
+            }
         }
         
         close(orq_sock);
-        std::cout << std::endl << "Orquestrator connection closed";
+        std::cout << std::endl << "Orquestrator connection closed" << std::endl;
         
     } catch (const std::invalid_argument &e) {
         std::cerr << e.what() << std::endl;
