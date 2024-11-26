@@ -12,13 +12,12 @@
 
 using json = nlohmann::json;
 
-#include "sta.h"
 #include "client.h"
 
 #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 
-#define IP_SERVER "127.0.0.1"
-// #define IP_SERVER "200.239.93.191" // Orquestrator
+// #define IP_SERVER "127.0.0.1"
+#define IP_SERVER "10.0.0.20" // Orquestrator
 #define PORT_SERVER 3990
 
 int main(int argc, char *argv[]) {

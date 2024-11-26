@@ -4,7 +4,7 @@
 #include <chrono>
 #include <thread>
 
-#include "../client.h"
+#include "../sta.h"
 
 void resetCam() {
     std::cout << "RealSense reset start" << std::endl;
