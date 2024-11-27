@@ -61,6 +61,10 @@
         "stop_token": "cpp",
         "thread": "cpp",
         "valarray": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "*.ipp": "cpp",
+        "list": "cpp",
+        "unordered_set": "cpp",
+        "bitset": "cpp"
     }
 }

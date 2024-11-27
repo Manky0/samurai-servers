@@ -41,6 +41,8 @@ int main(int argc, char *argv[]) {
         cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);
         cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
 
+        std::cout << "Device is ready." << depth_scale << std::endl;
+
         // Config interval timer
         auto const start_time = std::chrono::steady_clock::now();
         auto const wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
