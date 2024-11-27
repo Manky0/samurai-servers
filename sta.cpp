@@ -73,11 +73,6 @@ int main(int argc, char *argv[]) {
                 std::string currBeamRSS = getPerBeamRSS(radio_sock);
                 sendData(orq_sock, currBeamRSS, "rss_sta"); // Send rss data to server
 
-                Get RGB frame
-                std::vector<uchar> frame = getCamFrame(cap);
-                std::string frame_str(frame.begin(), frame.end());
-                sendData(orq_sock, frame_str, "rgb_sta");
-
                 // Get RGB frame
                 std::vector<uchar> rgb_frame = getRGB(p, align_to_color);
                 std::string rgb_str(rgb_frame.begin(), rgb_frame.end());
@@ -94,7 +89,7 @@ int main(int argc, char *argv[]) {
         }
         
         close(orq_sock);
-        close(radio_sock);
+        // close(radio_sock);
         p.stop(); // RealSense pipeline
         std::cout << std::endl << "Connections closed";
         
