@@ -15,8 +15,7 @@
 
 #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 
-#define IP_SERVER "10.0.0.20"
-// #define IP_SERVER "200.239.93.191" // Orquestrator
+#define IP_SERVER "10.0.0.20" // Orquestrator
 #define PORT_SERVER 3990
 
 #define IP_RADIO "192.168.0.1" // Mikrotik
@@ -34,11 +33,11 @@ int main(int argc, char *argv[]) {
         }
 
         // Connect with STA radio
-        // int radio_sock = connectWithServer(IP_RADIO, PORT_RADIO);
-        // if(radio_sock == -1){
-        //     std::cerr << "Error: Could not connect to radio at " << IP_RADIO << std::endl;
-        //     return -1;
-        // }
+        int radio_sock = connectWithServer(IP_RADIO, PORT_RADIO);
+        if(radio_sock == -1){
+            std::cerr << "Error: Could not connect to radio at " << IP_RADIO << std::endl;
+            return -1;
+        }
 
         std::cout << "Succesfully connected to Orquestrator and STA radio" << std::endl << std::endl;
 
@@ -71,13 +70,13 @@ int main(int argc, char *argv[]) {
 
             for (int i = 0; i < measure_times; i++) {
                 // Get radio data
-                // std::string currBeamRSS = getPerBeamRSS(radio_sock);
-                // sendData(orq_sock, currBeamRSS, "rss_sta"); // Send rss data to server
+                std::string currBeamRSS = getPerBeamRSS(radio_sock);
+                sendData(orq_sock, currBeamRSS, "rss_sta"); // Send rss data to server
 
-                // Get RGB frame
-                // std::vector<uchar> frame = getCamFrame(cap);
-                // std::string frame_str(frame.begin(), frame.end());
-                // sendData(orq_sock, frame_str, "rgb_sta");
+                Get RGB frame
+                std::vector<uchar> frame = getCamFrame(cap);
+                std::string frame_str(frame.begin(), frame.end());
+                sendData(orq_sock, frame_str, "rgb_sta");
 
                 // Get RGB frame
                 std::vector<uchar> rgb_frame = getRGB(p, align_to_color);
@@ -95,7 +94,7 @@ int main(int argc, char *argv[]) {
         }
         
         close(orq_sock);
-        // close(radio_sock);
+        close(radio_sock);
         p.stop(); // RealSense pipeline
         std::cout << std::endl << "Connections closed";
         
