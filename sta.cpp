@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 
         rs2::align align_to_color(RS2_STREAM_COLOR);
 
-        std::cout << "Device is ready." << depth_scale << std::endl;
+        std::cout << "Device is ready." << std::endl;
 
         // Config interval timer
         auto const start_time = std::chrono::steady_clock::now();
