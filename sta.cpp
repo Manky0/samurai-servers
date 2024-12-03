@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
                 sendData(orq_sock, rgb_str, "rgb_sta");
 
                 // Get Depth frame
-                std::vector<uchar> depth_frame = getDepth(p, align_to_color);
+                std::vector<uchar> depth_frame = getDepth(p, align_to_color, depth_scale);
                 std::string depth_str(depth_frame.begin(), depth_frame.end());
                 sendData(orq_sock, depth_str, "depth_sta");
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
         }
         
         close(orq_sock);
-        // close(radio_sock);
+        close(radio_sock);
         p.stop(); // RealSense pipeline
         std::cout << std::endl << "Connections closed";
         
