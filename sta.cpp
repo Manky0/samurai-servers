@@ -61,14 +61,14 @@ int main(int argc, char *argv[]) {
 
         std::cout << "Device is ready." << std::endl;
 
-        // Config interval timer
-        auto const start_time = std::chrono::steady_clock::now();
-        auto const wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
-        auto next_time = start_time + wait_time;
-
         while(1){
             int measure_times = listenToServer(orq_sock);
             if ( measure_times == 0 ) break;
+
+            // Set interval timer
+            auto const start_time = std::chrono::steady_clock::now();
+            auto const wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
+            auto next_time = start_time + wait_time;
 
             for (int i = 0; i < measure_times; i++) {
                 // Get radio data

@@ -42,7 +42,6 @@ int main(int argc, char *argv[]) {
 
         std::cout << "Device is ready." << std::endl;
 
-
         while(1){
             int measure_times = listenToServer(orq_sock);
             if ( measure_times == 0 ) break;
@@ -56,7 +55,7 @@ int main(int argc, char *argv[]) {
                 // Get RGB frame
                 std::vector<uchar> frame = getCamFrame(cap);
                 std::string frame_str(frame.begin(), frame.end());
-                sendData(orq_sock, frame_str, "rgb_ceil");
+                sendData(orq_sock, frame_str, "rgb_ap");
 
                 std::this_thread::sleep_until(next_time);
                 next_time += wait_time; // increment absolute time
