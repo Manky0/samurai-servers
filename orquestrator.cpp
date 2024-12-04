@@ -27,16 +27,6 @@ ssize_t readNBytes(int sock, char *buffer, size_t n) {
     return bytesRead;
 }
 
-json completeData (json data) {
-    // Get timestamp with ms precision
-    const auto now = std::chrono::system_clock::now();
-    const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-
-    data["received_at"] = timestamp;
-
-    return data;
-}
-
 void handleClient(int client_socket) {
     // Add client to list
     {
@@ -70,9 +60,9 @@ void handleClient(int client_socket) {
         memcpy(&dataSize, headerBuffer.data() + sizeof(deviceType), sizeof(dataSize));
         dataSize = ntohl(dataSize);
 
-        uint64_t timestamp;
-        memcpy(&timestamp, headerBuffer.data() + sizeof(deviceType) + sizeof(dataSize), sizeof(timestamp));
-        timestamp = be64toh(timestamp);
+        uint64_t captured_at;
+        memcpy(&captured_at, headerBuffer.data() + sizeof(deviceType) + sizeof(dataSize), sizeof(captured_at));
+        captured_at = be64toh(captured_at);
 
         // Read the data based on dataSize
         std::vector<char> dataBuffer(dataSize + 1, 0);
@@ -84,25 +74,20 @@ void handleClient(int client_socket) {
         }
 
         try {
-            // Parse the data as JSON
-            json received_data;
-            received_data["captured_at"] = timestamp;
+            const auto now = std::chrono::system_clock::now();
+            const auto received_at = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 
             if (deviceType == 0x01) {
-                received_data["data"] = json::parse(dataBuffer.data());
-                json complete_data = completeData(received_data);
+                json received_data = json::parse(dataBuffer.data()); // Parse the data as JSON
 
                 std::cout << "Received RSS data." << std::endl;
-                saveToCsv(complete_data);
+                saveToCsv(received_data, captured_at, received_at);
 
             } else if (deviceType == 0x02 || deviceType == 0x03 || deviceType == 0x04 || deviceType == 0x06) { // If it is an image
                 std::vector<unsigned char> img_data(dataBuffer.begin(), dataBuffer.end()); // Convert buffer to uchar
-                received_data["data"] = img_data;
-                received_data["type"] = deviceType;
-                json complete_data = completeData(received_data);
 
                 std::cout << "Received image data" << std::endl;
-                saveToJpeg(complete_data);
+                saveToJpeg(img_data, deviceType, captured_at, received_at);
 
             } else {
                 std::cerr << "Unknown device type: " << static_cast<int>(deviceType) << std::endl;
