@@ -19,7 +19,7 @@ sudo apt-get install nlohmann-json3-dev
 Tested with gcc 11.
 
 ### Orquestrator
-Acts as an TCP server, receives data from N clients.
+Acts as a TCP server, receives data from N clients.
 
 
 
@@ -131,7 +131,7 @@ When the server starts, detach the tmux window with `CTRL + B` then `D`.
 At the Orquestrator:
 - A .csv file with the name of the MAC address of the AP Mikrotik Radio is created, it saves the capture timestamp, the receive timestamp and 64 RSSI data (per beam rssi).
 
-- A images directories is created, if all the clients are enabled it should contain 4 more directories: rgb_sta, depth_sta, rgb_ceil, rgb_ap. Each image is named as: `[captured_at]_[received_at].jpg`
+- An images directory is created, if all the clients are enabled it should contain 4 directories: rgb_sta, depth_sta, rgb_ceil, rgb_ap. Each image is named as: `[captured_at]_[received_at].jpg`
 
 ## TODO
 

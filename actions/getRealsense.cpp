@@ -76,7 +76,7 @@ std::vector<uchar> getRGB(rs2::pipeline p, rs2::align align_to_color) {
     cv::Mat color_image(cv::Size(color_width, color_height), CV_8UC3, (void*)color_frame.get_data(), cv::Mat::AUTO_STEP);
 
     std::vector<uchar> buf;
-    std::vector<int> compression_params = {cv::IMWRITE_JPEG_QUALITY, 60}; // Adjust compression quality
+    std::vector<int> compression_params = {cv::IMWRITE_JPEG_QUALITY, 90}; // Adjust compression quality
     cv::imencode(".jpg", color_image, buf, compression_params); // Compress to JPEG
 
     return buf;
@@ -98,16 +98,16 @@ std::vector<uchar> getDepth(rs2::pipeline p, rs2::align align_to_color, float de
     depth_image.convertTo(scaled_depth, CV_8UC1, 255.0 / (max_depth / depth_scale));
     cv::applyColorMap(scaled_depth, depth_colormap, cv::COLORMAP_JET);
 
-    // Create a depth scale bar
-    cv::Mat scale_bar = createDepthScaleBar(depth_colormap.rows, 50, min_depth, max_depth);
+    // // Create a depth scale bar
+    // cv::Mat scale_bar = createDepthScaleBar(depth_colormap.rows, 50, min_depth, max_depth);
 
-    // Combine depth colormap and scale bar
-    cv::Mat combined;
-    cv::hconcat(depth_colormap, scale_bar, combined);
+    // // Combine depth colormap and scale bar
+    // cv::Mat combined;
+    // cv::hconcat(depth_colormap, scale_bar, combined);
 
     std::vector<uchar> buf;
     std::vector<int> compression_params = {cv::IMWRITE_JPEG_QUALITY, 90}; // Adjust compression quality
-    cv::imencode(".jpg", combined, buf, compression_params); // Compress to JPEG
+    cv::imencode(".jpg", depth_colormap, buf, compression_params); // Compress to JPEG
 
     return buf;
 }
