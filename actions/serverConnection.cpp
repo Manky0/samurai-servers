@@ -1,9 +1,6 @@
 #include <iostream>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
 
 #include "../client.h"
 
@@ -37,28 +34,18 @@ int connectWithServer(const char *server_ip, int port) {
 }
 
 int listenToServer(int sock) {
-    char buffer[1024];
-    int measure_times = 0;
+    char buffer[32];  // 32 bytes são suficientes para um número simples + '\n'
+    ssize_t bytes_read = read(sock, buffer, sizeof(buffer) - 1);
+    if (bytes_read <= 0) return 0;
 
-    while (true) {
-        ssize_t bytes_read = read(sock, buffer, sizeof(buffer) - 1);
-        if (bytes_read > 0) {
-            buffer[bytes_read] = '\0';
-            json message = json::parse(buffer);
-            std::string command = message["command"];
-
-            try{
-                measure_times = std::stoi(command);
-                break;
-            } catch (const std::invalid_argument &e) {
-                std::cout << "Not a number" << std::endl;
-            }
-        } else if (bytes_read == 0) {
-            break;
-        }
+    buffer[bytes_read] = '\0';
+    
+    try {
+        return std::stoi(buffer);  // Espera algo como "3\n"
+    } catch (const std::invalid_argument &e) {
+        std::cerr << "Received invalid command: " << buffer << std::endl;
+        return 0;
     }
-
-    return measure_times;
 }
 
 void sendData (int socket, std::string data, std::string device_type) {

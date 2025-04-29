@@ -16,7 +16,7 @@ using json = nlohmann::json;
 
 #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 
-#define IP_SERVER "10.0.0.20" // Orquestrator
+#define IP_SERVER "127.0.0.1" // Orquestrator
 #define PORT_SERVER 3990
 
 int main(int argc, char *argv[]) {
@@ -31,14 +31,9 @@ int main(int argc, char *argv[]) {
 
         std::cout << "Succesfully connected to Orquestrator" << std::endl << std::endl;
 
-        // Connect to camera and set resolution
-        cv::VideoCapture cap(-1);
-        if (!cap.isOpened()) {
-            std::cerr << "Error: Could not open camera" << std::endl;
-            return -1;
-        }
-        cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+        
+        // cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+        // cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
 
         std::cout << "Device is ready." << std::endl;
 
@@ -48,18 +43,23 @@ int main(int argc, char *argv[]) {
             if ( measure_times == 0 ) break;
 
             // Set interval timer
-            auto start_time = std::chrono::steady_clock::now();
-            auto wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
-            auto next_time = start_time + wait_time;
-
+            // auto start_time = std::chrono::steady_clock::now();
+            // auto wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
+            // auto next_time = start_time + wait_time;
             for (int i = 0; i < measure_times; i++) {
                 // Get RGB frame
+                // Connect to camera and set resolution
+                cv::VideoCapture cap("https://10.0.0.194:8080/video");
+                if (!cap.isOpened()) {
+                    std::cerr << "Error: Could not open camera" << std::endl;
+                    return -1;
+                }
                 std::vector<uchar> frame = getCamFrame(cap);
                 std::string frame_str(frame.begin(), frame.end());
                 sendData(orq_sock, frame_str, "rgb_ceil");
 
-                std::this_thread::sleep_until(next_time);
-                next_time += wait_time; // increment absolute time
+                // std::this_thread::sleep_until(next_time);
+                // next_time += wait_time; // increment absolute time
             }
         }
         

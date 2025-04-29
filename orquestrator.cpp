@@ -12,6 +12,7 @@ using json = nlohmann::json;
 
 #include "orquestrator.h"
 
+#define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 #define PORT 3990
 
 std::mutex clients_mutex;
@@ -112,11 +113,36 @@ void controlServer() {
     std::cout << "When all clients are connected, type how many measurements you want." << std::endl;
 
     while (true) {
-        std::string command;
-        std::cin >> command;
+        // ############### CLIENT SLEEP ###############
+        // std::string command;
+        // std::cin >> command;
 
-        json start_message = {{"command", command}};
-        sendToAllClients(start_message.dump());        
+        // json start_message = {{"command", command}};
+        // sendToAllClients(start_message.dump()); 
+
+        // ############### ORCHESTRATOR SLEEP ###############
+        int n;
+        std::cin >> n;
+
+        // Set interval timer
+        auto start_time = std::chrono::steady_clock::now();
+        auto wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
+        auto next_time = start_time + wait_time;
+
+        for (int i = 0; i < n; i++)
+        {
+            const auto now = std::chrono::system_clock::now();
+            const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+            std::cout << "Capture command sent at " << timestamp << std::endl;
+
+            std::string capture_msg = "1\n";
+            sendToAllClients(capture_msg);
+
+
+            std::this_thread::sleep_until(next_time);
+            next_time += wait_time; // increment absolute time
+        }
+          
     }
 }
 
