@@ -16,20 +16,20 @@ using json = nlohmann::json;
 
 #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 
-#define IP_SERVER "127.0.0.1" // Orquestrator
+#define IP_SERVER "127.0.0.1" // Orchestrator
 #define PORT_SERVER 3990
 
 int main(int argc, char *argv[]) {
 
     try {
-        // Connect with orquestrator
+        // Connect with orchestrator
         int orq_sock = connectWithServer(IP_SERVER, PORT_SERVER);
         if(orq_sock == -1){
             std::cerr << "Error: Could not connect to server at " << IP_SERVER << std::endl;
             return -1;
         }
 
-        std::cout << "Succesfully connected to Orquestrator" << std::endl << std::endl;
+        std::cout << "Succesfully connected to Orchestrator" << std::endl << std::endl;
 
         
         // cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
         }
         
         close(orq_sock);
-        std::cout << std::endl << "Orquestrator connection closed" << std::endl;
+        std::cout << std::endl << "Orchestrator connection closed" << std::endl;
         
     } catch (const std::invalid_argument &e) {
         std::cerr << e.what() << std::endl;

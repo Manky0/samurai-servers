@@ -18,7 +18,7 @@ sudo apt-get install nlohmann-json3-dev
 
 Tested with gcc 11.
 
-### Orquestrator
+### Orchestrator
 Acts as a TCP server, receives data from N clients.
 
 
@@ -85,10 +85,10 @@ make ceil
 
 1. Turn on the devices, including Mikrotik Radios
 
-2. Enable the server at the Orquestrator.
+2. Enable the server at the Orchestrator.
 ```
 mkdir out && cd out
-../builds/orquestrator.exe
+../builds/orchestrator.exe
 ```
 
 3. At the STA Minnowboard, enable the Mikrotik Radio server.
@@ -100,7 +100,7 @@ sh ./start_radio.sh
 When the server starts, detach the tmux window with `CTRL + B` then `D`.
 
 
-4. Enable the desired clients, wait until "Device is ready" message. "Client connected" will appear at the Orquestrator.
+4. Enable the desired clients, wait until "Device is ready" message. "Client connected" will appear at the Orchestrator.
 ```
 ./builds/sta.exe
 
@@ -109,11 +109,11 @@ When the server starts, detach the tmux window with `CTRL + B` then `D`.
 ./builds/ceil.exe
 ```
 
-5. When all the clients are connected, type a number N of measurements at the Orquestrator terminal. The clients will respond with N captures.
+5. When all the clients are connected, type a number N of measurements at the Orchestrator terminal. The clients will respond with N captures.
 
 ### IPs
 
-- Orquestrator: 10.0.0.20
+- Orchestrator: 10.0.0.20
 - Minnowboard STA: 10.0.0.31
 - Raspberry Ceil Cam: 10.0.0.32
 - Rasbperry AP: 10.0.0.39 
@@ -128,7 +128,7 @@ When the server starts, detach the tmux window with `CTRL + B` then `D`.
 
 ### Results
 
-At the Orquestrator:
+At the Orchestrator:
 - A .csv file with the name of the MAC address of the AP Mikrotik Radio is created, it saves the capture timestamp, the receive timestamp and 64 RSSI data (per beam rssi).
 
 - An images directory is created, if all the clients are enabled it should contain 4 directories: rgb_sta, depth_sta, rgb_ceil, rgb_ap. Each image is named as: `[captured_at]_[received_at].jpg`

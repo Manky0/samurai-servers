@@ -1,4 +1,4 @@
-all: sta ceil ap orq
+all: sta ceil ap orch
 
 sta:
 	g++-11 sta.cpp ./actions/getPerBeamRSS.cpp ./actions/serverConnection.cpp ./actions/getRealsense.cpp -o ./builds/sta.exe `pkg-config --cflags --libs opencv4` -lrealsense2
@@ -9,8 +9,8 @@ ceil:
 ap:
 	g++-11 ap.cpp ./actions/serverConnection.cpp ./actions/getCamFrame.cpp -o ./builds/ap.exe `pkg-config --cflags --libs opencv4`
 
-orq:
-	g++-11 orquestrator.cpp ./actions/saveToCsv.cpp ./actions/saveToJpeg.cpp -o ./builds/orquestrador.exe `pkg-config --cflags --libs opencv4` -pthread
+orch:
+	g++-11 orchestrator.cpp ./actions/saveToCsv.cpp ./actions/saveToJpeg.cpp -o ./builds/orchestrator.exe `pkg-config --cflags --libs opencv4` -pthread
 
 #### CLEAN FILES
 clean:

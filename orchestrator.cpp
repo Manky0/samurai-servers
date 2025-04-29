@@ -6,14 +6,17 @@
 #include <thread>
 #include <vector>
 #include <mutex>
+#include <atomic>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-#include "orquestrator.h"
+#include "orchestrator.h"
 
 #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 #define PORT 3990
+
+std::atomic<int> capture_counter{1};  // Image name increment
 
 std::mutex clients_mutex;
 std::vector<int> client_sockets;

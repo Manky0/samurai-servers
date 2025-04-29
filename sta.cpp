@@ -15,7 +15,7 @@
 
 // #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 
-#define IP_SERVER "10.0.0.20" // Orquestrator
+#define IP_SERVER "10.0.0.20" // Orchestrator
 #define PORT_SERVER 3990
 
 #define IP_RADIO "192.168.0.1" // Mikrotik
@@ -25,7 +25,7 @@
 int main(int argc, char *argv[]) {
 
     try {
-        // Connect with orquestrator
+        // Connect with orchestrator
         int orq_sock = connectWithServer(IP_SERVER, PORT_SERVER);
         if(orq_sock == -1){
             std::cerr << "Error: Could not connect to server at " << IP_SERVER << std::endl;
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
             return -1;
         }
 
-        std::cout << "Succesfully connected to Orquestrator and STA radio" << std::endl << std::endl;
+        std::cout << "Succesfully connected to Orchestrator and STA radio" << std::endl << std::endl;
 
         // Connect to RealSense and configure
         resetCam();

@@ -3,15 +3,20 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 #include <filesystem>
+#include <atomic>
+
+extern std::atomic<int> capture_counter; // Image name increment (from orchestrator.cpp)
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
-#include "../orquestrator.h"
+#include "../orchestrator.h"
 
 void saveToJpeg(std::vector<unsigned char> img_data, uint8_t device_type, uint64_t captured_at, uint64_t received_at) {
     try {
-        std::string img_name = std::to_string(captured_at) + "_" + std::to_string(received_at) + ".jpg";
+        int current_index = capture_counter.fetch_add(1);
+
+        std::string img_name = std::to_string(current_index) + "_" + std::to_string(captured_at) + "_" + std::to_string(received_at) + ".jpg";
 
         std::string dir_path;
 
