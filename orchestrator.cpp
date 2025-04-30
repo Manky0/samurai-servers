@@ -6,17 +6,16 @@
 #include <thread>
 #include <vector>
 #include <mutex>
-#include <atomic>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
 #include "orchestrator.h"
 
+std::string session_dir;
+
 #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 #define PORT 3990
-
-std::atomic<int> capture_counter{1};  // Image name increment
 
 std::mutex clients_mutex;
 std::vector<int> client_sockets;
@@ -126,6 +125,20 @@ void controlServer() {
         // ############### ORCHESTRATOR SLEEP ###############
         int n;
         std::cin >> n;
+
+        int folder_count = 0;
+        for (const auto& entry : std::filesystem::directory_iterator("./")) {
+            if (entry.is_directory()) {
+                folder_count++;
+            }
+        }
+
+        // Set the session directory name based on the number of folders
+        std::ostringstream ss;
+        ss << std::setw(3) << std::setfill('0') << folder_count + 1;
+        session_dir = "./" + ss.str() + "/";
+
+        std::filesystem::create_directories(session_dir);
 
         // Set interval timer
         auto start_time = std::chrono::steady_clock::now();

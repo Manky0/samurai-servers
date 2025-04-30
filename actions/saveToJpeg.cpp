@@ -3,7 +3,6 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 #include <filesystem>
-#include <atomic>
 
 extern std::atomic<int> capture_counter; // Image name increment (from orchestrator.cpp)
 
@@ -14,23 +13,26 @@ namespace fs = std::filesystem;
 
 void saveToJpeg(std::vector<unsigned char> img_data, uint8_t device_type, uint64_t captured_at, uint64_t received_at) {
     try {
-        int current_index = capture_counter.fetch_add(1);
-
-        std::string img_name = std::to_string(current_index) + "_" + std::to_string(captured_at) + "_" + std::to_string(received_at) + ".jpg";
-
         std::string dir_path;
 
+        extern std::string session_dir;  // Declare the global session_dir
+
         if (device_type == 0x02){
-            dir_path = "./images/rgb_sta/";
+            dir_path = session_dir + "images/rgb_sta/";
         } else if (device_type == 0x03) {
-            dir_path = "./images/depth_sta/";
+            dir_path = session_dir + "images/depth_sta/";
         } else if (device_type == 0x04) {
-            dir_path = "./images/rgb_ap/";
+            dir_path = session_dir + "images/rgb_ap/";
         } else if (device_type == 0x06) {
-            dir_path = "./images/rgb_ceil/";
+            dir_path = session_dir + "images/rgb_ceil/";
         }
 
         fs::create_directories(dir_path);
+
+        // Count files in the folder then define image name
+        int current_index = std::distance(fs::directory_iterator(dir_path), fs::directory_iterator{});
+
+        std::string img_name = std::to_string(current_index + 1) + "_" + std::to_string(captured_at) + "_" + std::to_string(received_at) + ".jpg";
         std::string img_path = dir_path + img_name;
         
         // Decode the compressed image back to cv::Mat

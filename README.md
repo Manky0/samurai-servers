@@ -25,7 +25,7 @@ Acts as a TCP server, receives data from N clients.
 
 1. Build
 ```
-make orq
+make orch
 ```
 
 ### Clients

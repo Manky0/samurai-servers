@@ -13,7 +13,8 @@ void saveToCsv(json data, uint64_t captured_at, uint64_t received_at) {
         uint64_t mac_addr = data["mac_addr"];
         std::vector<int> snr_data = data["snr_data"];
 
-        std::string filename = std::to_string(mac_addr) + ".csv";
+        extern std::string session_dir;  // Declare the global session_dir
+        std::string filename = session_dir + std::to_string(mac_addr) + ".csv";
 
         // Open CSV file
         std::ofstream csvFile(filename, std::ios::app);
