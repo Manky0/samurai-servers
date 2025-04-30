@@ -7,6 +7,9 @@
 #include <vector>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <iomanip>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 using json = nlohmann::json;
 
@@ -138,7 +141,7 @@ void controlServer() {
         ss << std::setw(3) << std::setfill('0') << folder_count + 1;
         session_dir = "./" + ss.str() + "/";
 
-        std::filesystem::create_directories(session_dir);
+        int status = mkdir(session_dir.c_str(), 0777); // cria o diretório com permissões
 
         // Set interval timer
         auto start_time = std::chrono::steady_clock::now();
