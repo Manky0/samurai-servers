@@ -4,8 +4,6 @@
 #include <nlohmann/json.hpp>
 #include <filesystem>
 
-extern std::atomic<int> capture_counter; // Image name increment (from orchestrator.cpp)
-
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 

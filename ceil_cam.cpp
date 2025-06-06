@@ -16,16 +16,26 @@ using json = nlohmann::json;
 
 #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
 
-#define IP_SERVER "127.0.0.1" // Orchestrator
+#define ORCH_IP "10.0.0.20" // Orchestrator
 #define PORT_SERVER 3990
 
 int main(int argc, char *argv[]) {
 
+    if (argc < 2) {
+        std::cerr << "Insuficient arguments" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <camera_ip> [orchestrator_ip=10.0.0.20]" << std::endl;
+        std::cerr << "Example: " << argv[0] << " 200.239.93.231 127.0.0.1" << std::endl;
+        return -1;
+    }
+
+    std::string video_ip = argv[1]; // cam ip
+    std::string orch_ip = (argc > 2) ? argv[2] : ORCH_IP; // arg or default value
+
     try {
         // Connect with orchestrator
-        int orq_sock = connectWithServer(IP_SERVER, PORT_SERVER);
+        int orq_sock = connectWithServer(orch_ip.c_str(), PORT_SERVER);
         if(orq_sock == -1){
-            std::cerr << "Error: Could not connect to server at " << IP_SERVER << std::endl;
+            std::cerr << "Error: Could not connect to server at " << orch_ip << std::endl;
             return -1;
         }
 
@@ -49,7 +59,7 @@ int main(int argc, char *argv[]) {
             for (int i = 0; i < measure_times; i++) {
                 // Get RGB frame
                 // Connect to camera and set resolution
-                cv::VideoCapture cap("https://10.0.0.194:8080/video");
+                cv::VideoCapture cap("https://" + video_ip + ":8080/video");
                 if (!cap.isOpened()) {
                     std::cerr << "Error: Could not open camera" << std::endl;
                     return -1;

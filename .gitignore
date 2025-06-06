@@ -1,3 +1,2 @@
-/out/*
-/builds/*
 .vscode
+builds
