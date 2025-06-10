@@ -7,16 +7,16 @@ This code is based at
 
 ## Dependencies
 
-Needed at all the devices:
+Install the following depedencies:
 
 ```
-sudo apt-get install make
+sudo apt-get install make nlohmann-json3-dev
 
+# Minnowboard only
 sudo apt-get install libopencv-dev
-sudo apt-get install nlohmann-json3-dev
 ```
 
-Tested with gcc 11.
+Tested with gcc 11, c++ 17.
 
 ### Orchestrator
 Acts as a TCP server, receives data from N clients.
@@ -87,20 +87,19 @@ make ceil
 
 2. Enable the server at the Orchestrator.
 ```
-mkdir out && cd out
-../builds/orchestrator.exe
+mkdir out
+../builds/orchestrator.exe -o ./out
 ```
 
-3. At the STA Minnowboard, enable the Mikrotik Radio server.
+3. At the Minnowboard with the STA radio, enable the Mikrotik Radio server.
 ```
-cd ./builds/STA/
+cd ./scripts/STA/
 sh ./start_radio.sh
-
 ```
 When the server starts, detach the tmux window with `CTRL + B` then `D`.
 
 
-4. Enable the desired clients, wait until "Device is ready" message. "Client connected" will appear at the Orchestrator.
+4. Enable the desired clients, **wait until "Device is ready"** message. "Client connected" will appear at the Orchestrator.
 ```
 ./builds/sta.exe
 

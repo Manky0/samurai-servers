@@ -101,7 +101,7 @@ void handleClient(int client_socket)
                 saveToCsv(received_data, captured_at, received_at);
             }
             else if (deviceType == 0x02 || deviceType == 0x03 || deviceType == 0x04 || deviceType == 0x06)
-            {                                                                              // If it is an image
+            { // If it is an image
                 std::vector<unsigned char> img_data(dataBuffer.begin(), dataBuffer.end()); // Convert buffer to uchar
 
                 std::cout << "Received image data" << std::endl;
