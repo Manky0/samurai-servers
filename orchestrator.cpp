@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
                       << "  -i, --interval <ms>\tDefine capture interval in milliseconds (default: " << capture_interval << "ms).\n"
                       << "  -o, --output <path>\tDefine output directory (default: " << base_output_dir << "/).\n"
                       << "  -w, --walk-time <s>\tDefine robot walking time in seconds (default: " << walk_time << "s/DISABLED).\n"
-                      << "  -p, --n-points <s>\tDefine the number of points the robot will stop (if enabled)  (default: " << n_points << ").\n"
+                      << "  -p, --n-points <number>\tDefine the number of points the robot will stop (if enabled)  (default: " << n_points << ").\n"
                       << "  -c, --n-captures <number>\tDefine number of captures when the robot stops (if enabled) (default: " << n_captures << ").\n"
                       << std::endl;
             return 0;
