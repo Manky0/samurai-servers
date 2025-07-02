@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <cstdlib>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -20,6 +21,10 @@ bool use_session_folders = false;
 std::string session_dir;
 int capture_interval = 200; // Interval time between messages (ms)
 std::string base_output_dir = ".";
+
+int walk_time = 0;
+int n_captures = 10;
+int n_points = 5;
 
 #define PORT 3990
 
@@ -130,7 +135,14 @@ void sendToAllClients(const std::string &message)
 
 void controlServer()
 {
-    std::cout << "When all clients are connected, type how many measurements you want." << std::endl;
+    std::cout << std::endl << "----- CAPTURE STARTED -----" << std::endl << std::endl;
+
+    if (walk_time > 0) { // if robot walking control enabled
+        startUart();
+        stopWalking();
+    } else {
+        std::cout << "When all clients are connected, type how many measurements you want. (-1  for infinite)" << std::endl;
+    }
 
     if (use_session_folders && base_output_dir == ".")
     {
@@ -147,17 +159,6 @@ void controlServer()
 
     while (true)
     {
-        // ############### CLIENT SLEEP ###############
-        // std::string command;
-        // std::cin >> command;
-
-        // json start_message = {{"command", command}};
-        // sendToAllClients(start_message.dump());
-
-        // ############### ORCHESTRATOR SLEEP ###############
-        int n;
-        std::cin >> n;
-
         if (use_session_folders) {
             size_t folder_count = 0;
             if (std::filesystem::exists(base_output_dir)) {
@@ -173,30 +174,76 @@ void controlServer()
             std::filesystem::create_directories(session_dir);
         }
 
-        // Set interval timer
-        auto start_time = std::chrono::steady_clock::now();
-        auto wait_time = std::chrono::milliseconds{capture_interval};
-        auto next_time = start_time + wait_time;
+        // ############### CLIENT SLEEP ###############
+        // std::string command;
+        // std::cin >> command;
 
-        for (int i = 0; i < n; i++)
-        {
-            const auto now = std::chrono::system_clock::now();
-            const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-            std::cout << "Capture command sent at " << timestamp << std::endl;
+        // json start_message = {{"command", command}};
+        // sendToAllClients(start_message.dump());
 
-            std::string capture_msg = "1\n";
-            sendToAllClients(capture_msg);
+        // ############### ORCHESTRATOR SLEEP ###############
+        // ----- INDEPENDENT FROM ROBOT (TYPE N CAPTURES) -----
+        if (walk_time == 0) { 
+            int n;
+            std::cin >> n;
 
-            std::this_thread::sleep_until(next_time);
-            next_time += wait_time; // increment absolute time
+            // Set interval timer
+            auto wait_time = std::chrono::milliseconds{capture_interval};
+            auto next_time = std::chrono::steady_clock::now() + wait_time;
+
+            for (int i = 0; n == -1 || i < n; i++) // infinite loop if n is -1
+            {
+                const auto now = std::chrono::system_clock::now();
+                const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+                std::cout << "Capture command sent at " << timestamp << std::endl;
+
+                std::string capture_msg = "1\n";
+                sendToAllClients(capture_msg);
+
+                std::this_thread::sleep_until(next_time);
+                next_time += wait_time; // increment absolute time
+            }
+
+        // ----- CONTROLLING ROBOT WALK -----
+        } else { 
+            for (int point = 0; point < n_points; point++) {
+
+                // Set CAPTURE interval timer
+                auto start_time = std::chrono::steady_clock::now();
+                auto wait_time = std::chrono::milliseconds{capture_interval};
+                auto next_time = start_time + wait_time;
+
+                for (int n_capture = 0; n_capture < n_captures; n_capture++){
+                    const auto now = std::chrono::system_clock::now();
+                    const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+                    std::cout << "Capture command sent at " << timestamp << std::endl;
+
+                    std::string capture_msg = "1\n";
+                    sendToAllClients(capture_msg);
+
+                    std::this_thread::sleep_until(next_time);
+                    next_time += wait_time; // increment absolute time
+                }
+
+                // Wait robot walk
+                std::cout << "Robot will walk for " << walk_time << " seconds..." << std::endl;
+                startWalking();
+                std::this_thread::sleep_for(std::chrono::seconds(walk_time));
+                std::cout << "Robot stopped!" << std::endl << std::endl;
+                stopWalking();
+            }
+
+            std::cout << "----- CAPTURE FINISHED -----" << std::endl;
+            exit(0);
         }
+
     }
 }
 
 int main(int argc, char *argv[])
 {
 
-    // check args
+    // ----- check args -----
     for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
@@ -220,18 +267,34 @@ int main(int argc, char *argv[])
         {
             base_output_dir = argv[++i];
         }
+        else if ((arg == "-w" || arg == "--walk-time") && i + 1 < argc)
+        {
+            walk_time = std::stoi(argv[++i]);
+        }
+        else if ((arg == "-p" || arg == "--n_points") && i + 1 < argc)
+        {
+            n_points = std::stoi(argv[++i]);
+        }
+        else if ((arg == "-c" || arg == "--n-captures") && i + 1 < argc)
+        {
+            n_captures = std::stoi(argv[++i]);
+        }
         else if (arg == "-h" || arg == "--help")
         {
             std::cout << "Usage: " << argv[0] << " [options]\n\n"
                       << "Options:\n"
                       << "  -h, --help\t\tShow this help menu.\n"
                       << "  -S, --sessions\tEnable session mode (new folder will be created for each batch of data).\n"
-                      << "  -i, --interval <ms>\tDefine capture interval in milliseconds (default: 200ms).\n"
-                      << "  -o, --output <path>\tDefine output directory (default: ./).\n"
+                      << "  -i, --interval <ms>\tDefine capture interval in milliseconds (default: " << capture_interval << "ms).\n"
+                      << "  -o, --output <path>\tDefine output directory (default: " << base_output_dir << "/).\n"
+                      << "  -w, --walk-time <s>\tDefine robot walking time in seconds (default: " << walk_time << "s/DISABLED).\n"
+                      << "  -p, --n-points <s>\tDefine the number of points the robot will stop (if enabled)  (default: " << n_points << ").\n"
+                      << "  -c, --n-captures <number>\tDefine number of captures when the robot stops (if enabled) (default: " << n_captures << ").\n"
                       << std::endl;
             return 0;
         }
     }
+    // ----- end check args -----
 
     if (use_session_folders)
     {

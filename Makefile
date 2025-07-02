@@ -10,7 +10,7 @@ ap:
 	g++-11 ap.cpp ./actions/serverConnection.cpp ./actions/getCamFrame.cpp -o ./builds/ap.exe `pkg-config --cflags --libs opencv4`
 
 orch:
-	g++-11 -std=c++17 orchestrator.cpp ./actions/saveToCsv.cpp ./actions/saveToJpeg.cpp -o ./builds/orchestrator.exe `pkg-config --cflags --libs opencv4` -pthread
+	g++-11 -std=c++17 orchestrator.cpp ./actions/controlRobot.cpp ./actions/saveToCsv.cpp ./actions/saveToJpeg.cpp -o ./builds/orchestrator.exe `pkg-config --cflags --libs opencv4` -pthread
 
 #### CLEAN FILES
 clean:
