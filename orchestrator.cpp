@@ -127,19 +127,18 @@ void handleClient(int client_socket)
 void sendToAllClients(const std::string &message)
 {
     std::lock_guard<std::mutex> lock(clients_mutex);
+    std::string full_message = message + "\n";
+
     for (int client_socket : client_sockets)
     {
-        send(client_socket, message.c_str(), message.size(), 0);
+        send(client_socket, full_message.c_str(), full_message.size(), 0);
     }
 }
 
 void controlServer()
 {
-    std::cout << std::endl << "----- CAPTURE STARTED -----" << std::endl << std::endl;
-
     if (walk_time > 0) { // if robot walking control enabled
-        startUart();
-        stopWalking();
+        std::cout << "When all clients are connected, press ENTER to start" << std::endl;
     } else {
         std::cout << "When all clients are connected, type how many measurements you want. (-1  for infinite)" << std::endl;
     }
@@ -206,37 +205,59 @@ void controlServer()
 
         // ----- CONTROLLING ROBOT WALK -----
         } else { 
-            for (int point = 0; point < n_points; point++) {
+            std::cin.get(); // wait for button press
+            // uart: -2
+            // walk: -3
+            // stop: -4
 
-                // Set CAPTURE interval timer
-                auto start_time = std::chrono::steady_clock::now();
-                auto wait_time = std::chrono::milliseconds{capture_interval};
-                auto next_time = start_time + wait_time;
+            sendToAllClients("-2");
+            sendToAllClients("-4");
 
-                for (int n_capture = 0; n_capture < n_captures; n_capture++){
-                    const auto now = std::chrono::system_clock::now();
-                    const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-                    std::cout << "Capture command sent at " << timestamp << std::endl;
+            while (true) {
+                std::cout << std::endl << "----- CAPTURE STARTED -----" << std::endl << std::endl;
+                
+                for (int point = 0; point < n_points; point++) {
 
-                    std::string capture_msg = "1\n";
-                    sendToAllClients(capture_msg);
+                    // Set CAPTURE interval timer
+                    auto start_time = std::chrono::steady_clock::now();
+                    auto wait_time = std::chrono::milliseconds{capture_interval};
+                    auto next_time = start_time + wait_time;
 
-                    std::this_thread::sleep_until(next_time);
-                    next_time += wait_time; // increment absolute time
+                    for (int n_capture = 0; n_capture < n_captures; n_capture++){
+                        const auto now = std::chrono::system_clock::now();
+                        const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+                        std::cout << "Capture command sent at " << timestamp << std::endl;
+
+                        std::string capture_msg = "1";
+                        sendToAllClients(capture_msg);
+
+                        std::this_thread::sleep_until(next_time);
+                        next_time += wait_time; // increment absolute time
+                    }
+
+                    // Wait robot walk
+                    std::cout << "Robot will walk for " << walk_time << " seconds..." << std::endl;
+                    sendToAllClients("-3");
+                    std::this_thread::sleep_for(std::chrono::seconds(walk_time));
+                    std::cout << "Robot stopped!" << std::endl << std::endl;
+                    sendToAllClients("-4");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
 
-                // Wait robot walk
-                std::cout << "Robot will walk for " << walk_time << " seconds..." << std::endl;
-                startWalking();
-                std::this_thread::sleep_for(std::chrono::seconds(walk_time));
-                std::cout << "Robot stopped!" << std::endl << std::endl;
-                stopWalking();
+                std::cout << "----- CAPTURE FINISHED -----\n";
+                std::cout << "Press Enter to capture again or type 'q' then Enter to quit: ";
+
+                std::string input;
+                std::getline(std::cin, input);
+
+                if (!input.empty() && (input[0] == 'q' || input[0] == 'Q')) {
+                    std::cout << "Exiting...\n";
+                    exit(0);
+                }
+
+                std::cout << "\nRestarting capture...\n";
             }
-
-            std::cout << "----- CAPTURE FINISHED -----" << std::endl;
-            exit(0);
         }
-
     }
 }
 

@@ -49,27 +49,33 @@ int main(int argc, char *argv[]) {
 
 
         while(1){
-            int measure_times = listenToServer(orq_sock);
-            if ( measure_times == 0 ) break;
+            std::string capture_command = listenToServer(orq_sock);
 
-            // Set interval timer
-            // auto start_time = std::chrono::steady_clock::now();
-            // auto wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
-            // auto next_time = start_time + wait_time;
-            for (int i = 0; i < measure_times; i++) {
-                // Get RGB frame
-                // Connect to camera and set resolution
-                cv::VideoCapture cap("https://" + video_ip + ":8080/video");
-                if (!cap.isOpened()) {
-                    std::cerr << "Error: Could not open camera" << std::endl;
-                    return -1;
-                }
-                std::vector<uchar> frame = getCamFrame(cap);
-                std::string frame_str(frame.begin(), frame.end());
-                sendData(orq_sock, frame_str, "rgb_ceil");
+            if (capture_command.empty()) {
+                // std::cerr << "Server disconnected." << std::endl;
+                break;
+            }
 
-                // std::this_thread::sleep_until(next_time);
-                // next_time += wait_time; // increment absolute time
+            try {
+                    int value = std::stoi(capture_command);
+
+                    for (int i = 0; i < capture_command; i++) {
+                        // Get RGB frame
+                        // Connect to camera and set resolution
+                        cv::VideoCapture cap("https://" + video_ip + ":8080/video");
+                        if (!cap.isOpened()) {
+                            std::cerr << "Error: Could not open camera" << std::endl;
+                            return -1;
+                        }
+                        std::vector<uchar> frame = getCamFrame(cap);
+                        std::string frame_str(frame.begin(), frame.end());
+                        sendData(orq_sock, frame_str, "rgb_ceil");
+
+                        // std::this_thread::sleep_until(next_time);
+                        // next_time += wait_time; // increment absolute time
+                    }
+            } catch (...) {
+                std::cerr << "Unknown message: " << capture_command << std::endl;
             }
         }
         

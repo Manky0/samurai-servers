@@ -33,19 +33,35 @@ int connectWithServer(const char *server_ip, int port) {
     return sock;
 }
 
-int listenToServer(int sock) {
-    char buffer[32];  // 32 bytes são suficientes para um número simples + '\n'
+// int listenToServer(int sock) {
+//     char buffer[32];  // 32 bytes são suficientes para um número simples + '\n'
+//     ssize_t bytes_read = read(sock, buffer, sizeof(buffer) - 1);
+//     if (bytes_read <= 0) return 0;
+
+//     buffer[bytes_read] = '\0';
+    
+//     try {
+//         return std::stoi(buffer);  // Espera algo como "3\n"
+//     } catch (const std::invalid_argument &e) {
+//         std::cerr << "Received invalid command: " << buffer << std::endl;
+//         return 0;
+//     }
+// }
+
+std::string listenToServer(int sock) {
+    char buffer[32];
     ssize_t bytes_read = read(sock, buffer, sizeof(buffer) - 1);
-    if (bytes_read <= 0) return 0;
+    if (bytes_read <= 0) {
+        if (bytes_read == 0) {
+            std::cerr << "Connection closed by Orchestrator." << std::endl;
+        } else {
+            perror("read");
+        }
+        return "";
+    }
 
     buffer[bytes_read] = '\0';
-    
-    try {
-        return std::stoi(buffer);  // Espera algo como "3\n"
-    } catch (const std::invalid_argument &e) {
-        std::cerr << "Received invalid command: " << buffer << std::endl;
-        return 0;
-    }
+    return std::string(buffer);
 }
 
 void sendData (int socket, std::string data, std::string device_type) {

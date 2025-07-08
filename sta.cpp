@@ -13,29 +13,36 @@
 #include "sta.h"
 #include "client.h"
 
-// #define CAPTURE_INTERVAL 200 // Interval time between messages (ms)
+#define ORCH_IP "10.0.0.20" // Orchestrator
+#define ORCH_PORT 3990
 
-#define IP_SERVER "10.0.0.20" // Orchestrator
-#define PORT_SERVER 3990
-
-#define IP_RADIO "192.168.0.1" // Mikrotik
-#define PORT_RADIO 8000
+#define RADIO_IP "192.168.0.1" // Mikrotik
+#define RADIO_PORT 8000
 
 
 int main(int argc, char *argv[]) {
 
+    if (argc < 2) {
+        std::cerr << "Insuficient arguments" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " [orchestrator_ip=10.0.0.20]" << std::endl;
+        std::cerr << "Example: " << argv[0] << " 127.0.0.1" << std::endl;
+        return -1;
+    }
+
+    std::string orch_ip = (argc > 1) ? argv[1] : ORCH_IP; // arg or default value
+
     try {
         // Connect with orchestrator
-        int orq_sock = connectWithServer(IP_SERVER, PORT_SERVER);
+        int orq_sock = connectWithServer(orch_ip.c_str(), ORCH_PORT);
         if(orq_sock == -1){
-            std::cerr << "Error: Could not connect to server at " << IP_SERVER << std::endl;
+            std::cerr << "Error: Could not connect to server at " << orch_ip << std::endl;
             return -1;
         }
 
         // Connect with STA radio
-        int radio_sock = connectWithServer(IP_RADIO, PORT_RADIO);
+        int radio_sock = connectWithServer(RADIO_IP, RADIO_PORT);
         if(radio_sock == -1){
-            std::cerr << "Error: Could not connect to radio at " << IP_RADIO << std::endl;
+            std::cerr << "Error: Could not connect to radio at " << RADIO_IP << std::endl;
             return -1;
         }
 
@@ -58,36 +65,53 @@ int main(int argc, char *argv[]) {
         std::cout << "RealSense Depth Scale is: " << depth_scale << std::endl;
 
         rs2::align align_to_color(RS2_STREAM_COLOR);
+        
+        // Start GPIO ports
+        startGPIO(72); // GPIO_UART1_RTS
+        valueGPIO(72, 1);
 
         std::cout << "Device is ready." << std::endl;
 
         while(1){
-            int measure_times = listenToServer(orq_sock);
-            if ( measure_times == 0 ) break;
+            std::string capture_command = listenToServer(orq_sock);
 
-            // Set interval timer
-            // auto start_time = std::chrono::steady_clock::now();
-            // auto wait_time = std::chrono::milliseconds{CAPTURE_INTERVAL};
-            // auto next_time = start_time + wait_time;
-
-            for (int i = 0; i < measure_times; i++) {
-                // Get radio data
-                std::string currBeamRSS = getPerBeamRSS(radio_sock);
-                sendData(orq_sock, currBeamRSS, "rss_sta"); // Send rss data to server
-
-                // Get RGB frame
-                std::vector<uchar> rgb_frame = getRGB(p, align_to_color);
-                std::string rgb_str(rgb_frame.begin(), rgb_frame.end());
-                sendData(orq_sock, rgb_str, "rgb_sta");
-
-                // Get Depth frame
-                std::vector<uchar> depth_frame = getDepth(p, align_to_color, depth_scale);
-                std::string depth_str(depth_frame.begin(), depth_frame.end());
-                sendData(orq_sock, depth_str, "depth_sta");
-
-                // std::this_thread::sleep_until(next_time);
-                // next_time += wait_time; // increment absolute time
+            if (capture_command.empty()) {
+                // std::cerr << "Server disconnected." << std::endl;
+                break;
             }
+
+            try {
+                int value = std::stoi(capture_command);
+
+                if ( value == -4 ) {
+                    stopWalking();
+                } else if ( value == -3 ) {
+                    startWalking();
+                } else if ( value == -2 ) {
+                    startUart();
+                } else { // Normal capture procedure
+
+                    for (int i = 0; i < value; i++) {
+                        // Get radio data
+                        std::string currBeamRSS = getPerBeamRSS(radio_sock);
+                        sendData(orq_sock, currBeamRSS, "rss_sta"); // Send rss data to server
+
+                        // Get RGB frame
+                        std::vector<uchar> rgb_frame = getRGB(p, align_to_color);
+                        std::string rgb_str(rgb_frame.begin(), rgb_frame.end());
+                        sendData(orq_sock, rgb_str, "rgb_sta");
+
+                        // Get Depth frame
+                        std::vector<uchar> depth_frame = getDepth(p, align_to_color, depth_scale);
+                        std::string depth_str(depth_frame.begin(), depth_frame.end());
+                        sendData(orq_sock, depth_str, "depth_sta");
+                    }
+                    valueGPIO(72, 0);
+                }
+            } catch (...) {
+                std::cerr << "Unknown message: " << capture_command << std::endl;
+            }
+            
         }
         
         close(orq_sock);
