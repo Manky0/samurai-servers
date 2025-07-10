@@ -68,7 +68,6 @@ int main(int argc, char *argv[]) {
         
         // Start GPIO ports
         startGPIO(72); // GPIO_UART1_RTS
-        valueGPIO(72, 1);
 
         std::cout << "Device is ready." << std::endl;
 
@@ -83,10 +82,15 @@ int main(int argc, char *argv[]) {
             try {
                 int value = std::stoi(capture_command);
 
+                
                 if ( value == -4 ) {
+                    valueGPIO(72, 1);
                     stopWalking();
+                    valueGPIO(72, 0);
                 } else if ( value == -3 ) {
+                    valueGPIO(72, 1);
                     startWalking();
+                    valueGPIO(72, 0);
                 } else if ( value == -2 ) {
                     startUart();
                 } else { // Normal capture procedure
@@ -106,7 +110,7 @@ int main(int argc, char *argv[]) {
                         std::string depth_str(depth_frame.begin(), depth_frame.end());
                         sendData(orq_sock, depth_str, "depth_sta");
                     }
-                    valueGPIO(72, 0);
+                    
                 }
             } catch (...) {
                 std::cerr << "Unknown message: " << capture_command << std::endl;
