@@ -22,7 +22,7 @@
 
 int main(int argc, char *argv[]) {
 
-    if (argc < 2) {
+    if (argc < 1) {
         std::cerr << "Insuficient arguments" << std::endl;
         std::cerr << "Usage: " << argv[0] << " [orchestrator_ip=10.0.0.20]" << std::endl;
         std::cerr << "Example: " << argv[0] << " 127.0.0.1" << std::endl;

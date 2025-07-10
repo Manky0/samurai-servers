@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
             try {
                     int value = std::stoi(capture_command);
 
-                    for (int i = 0; i < capture_command; i++) {
+                    for (int i = 0; i < value; i++) {
                         // Get RGB frame
                         // Connect to camera and set resolution
                         cv::VideoCapture cap("https://" + video_ip + ":8080/video");

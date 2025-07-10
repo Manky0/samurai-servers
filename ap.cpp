@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
             try {
                     int value = std::stoi(capture_command);
 
-                    for (int i = 0; i < measure_times; i++) {
+                    for (int i = 0; i < value; i++) {
                         // Get RGB frame
                         std::vector<uchar> frame = getCamFrame(cap);
                         std::string frame_str(frame.begin(), frame.end());
