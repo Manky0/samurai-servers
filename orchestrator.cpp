@@ -106,7 +106,7 @@ void handleClient(int client_socket)
                 saveToCsv(received_data, captured_at, received_at);
             }
             else if (deviceType == 0x02 || deviceType == 0x03 || deviceType == 0x04 || deviceType == 0x06)
-            { // If it is an image
+            {                                                                              // If it is an image
                 std::vector<unsigned char> img_data(dataBuffer.begin(), dataBuffer.end()); // Convert buffer to uchar
 
                 std::cout << "Received image data" << std::endl;
@@ -135,26 +135,33 @@ void sendToAllClients(const std::string &message)
     }
 }
 
-std::string createNextSessionFolder(const std::string& base_output_dir) {
+std::string createNextSessionFolder(const std::string &base_output_dir)
+{
     size_t folder_count = 0;
-    if (std::filesystem::exists(base_output_dir)) {
-        for (const auto& entry : std::filesystem::directory_iterator(base_output_dir)) {
-            if (entry.is_directory()) {
+    if (std::filesystem::exists(base_output_dir))
+    {
+        for (const auto &entry : std::filesystem::directory_iterator(base_output_dir))
+        {
+            if (entry.is_directory())
+            {
                 folder_count++;
             }
         }
     }
     std::ostringstream ss;
     ss << std::setw(3) << std::setfill('0') << folder_count + 1;
-    std::string session_dir = base_output_dir + "/" + ss.str() + "/";
+    session_dir = base_output_dir + "/" + ss.str() + "/";
     return session_dir;
 }
 
 void controlServer()
 {
-    if (walk_time > 0) { // if robot walking control enabled
+    if (walk_time > 0)
+    { // if robot walking control enabled
         std::cout << "When all clients are connected, press ENTER to start" << std::endl;
-    } else {
+    }
+    else
+    {
         std::cout << "When all clients are connected, type how many measurements you want. (-1  for infinite)" << std::endl;
     }
 
@@ -182,9 +189,11 @@ void controlServer()
 
         // ############### ORCHESTRATOR SLEEP ###############
         // ----- INDEPENDENT FROM ROBOT (TYPE N CAPTURES) -----
-        if (walk_time == 0) { 
+        if (walk_time == 0)
+        {
 
-            if (use_session_folders) {
+            if (use_session_folders)
+            {
                 session_dir = createNextSessionFolder(base_output_dir);
             }
 
@@ -208,8 +217,10 @@ void controlServer()
                 next_time += wait_time; // increment absolute time
             }
 
-        // ----- CONTROLLING ROBOT WALK -----
-        } else { 
+            // ----- CONTROLLING ROBOT WALK -----
+        }
+        else
+        {
             std::cin.get(); // wait for button press
             // uart: -2
             // walk: -3
@@ -218,12 +229,17 @@ void controlServer()
             sendToAllClients("-2");
             sendToAllClients("-4");
 
-            while (true) {
-                std::cout << std::endl << "----- CAPTURE STARTED -----" << std::endl << std::endl;
-                
-                for (int point = 0; point < n_points; point++) {
+            while (true)
+            {
+                std::cout << std::endl
+                          << "----- CAPTURE STARTED -----" << std::endl
+                          << std::endl;
 
-                    if (use_session_folders) {
+                for (int point = 0; point < n_points; point++)
+                {
+
+                    if (use_session_folders)
+                    {
                         session_dir = createNextSessionFolder(base_output_dir);
                     }
 
@@ -232,7 +248,8 @@ void controlServer()
                     auto wait_time = std::chrono::milliseconds{capture_interval};
                     auto next_time = start_time + wait_time;
 
-                    for (int n_capture = 0; n_capture < n_captures; n_capture++){
+                    for (int n_capture = 0; n_capture < n_captures; n_capture++)
+                    {
                         const auto now = std::chrono::system_clock::now();
                         const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
                         std::cout << "Capture command sent at " << timestamp << std::endl;
@@ -248,7 +265,8 @@ void controlServer()
                     std::cout << "Robot will walk for " << walk_time << " ms..." << std::endl;
                     sendToAllClients("-3");
                     std::this_thread::sleep_for(std::chrono::milliseconds(walk_time));
-                    std::cout << "Robot stopped!" << std::endl << std::endl;
+                    std::cout << "Robot stopped!" << std::endl
+                              << std::endl;
                     sendToAllClients("-4");
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 }
@@ -259,7 +277,8 @@ void controlServer()
                 std::string input;
                 std::getline(std::cin, input);
 
-                if (!input.empty() && (input[0] == 'q' || input[0] == 'Q')) {
+                if (!input.empty() && (input[0] == 'q' || input[0] == 'Q'))
+                {
                     std::cout << "Exiting...\n";
                     exit(0);
                 }

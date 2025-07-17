@@ -8,7 +8,8 @@
 #include <thread>
 #include <opencv2/opencv.hpp>
 #include <vector>
-#include <librealsense2/rs.hpp> 
+#include <optional>
+#include <librealsense2/rs.hpp>
 
 #include "sta.h"
 #include "client.h"
@@ -19,10 +20,11 @@
 #define RADIO_IP "192.168.0.1" // Mikrotik
 #define RADIO_PORT 8000
 
+int main(int argc, char *argv[])
+{
 
-int main(int argc, char *argv[]) {
-
-    if (argc < 1) {
+    if (argc < 1)
+    {
         std::cerr << "Insuficient arguments" << std::endl;
         std::cerr << "Usage: " << argv[0] << " [orchestrator_ip=10.0.0.20]" << std::endl;
         std::cerr << "Example: " << argv[0] << " 127.0.0.1" << std::endl;
@@ -31,22 +33,26 @@ int main(int argc, char *argv[]) {
 
     std::string orch_ip = (argc > 1) ? argv[1] : ORCH_IP; // arg or default value
 
-    try {
+    try
+    {
         // Connect with orchestrator
         int orq_sock = connectWithServer(orch_ip.c_str(), ORCH_PORT);
-        if(orq_sock == -1){
+        if (orq_sock == -1)
+        {
             std::cerr << "Error: Could not connect to server at " << orch_ip << std::endl;
             return -1;
         }
 
         // Connect with STA radio
         int radio_sock = connectWithServer(RADIO_IP, RADIO_PORT);
-        if(radio_sock == -1){
+        if (radio_sock == -1)
+        {
             std::cerr << "Error: Could not connect to radio at " << RADIO_IP << std::endl;
             return -1;
         }
 
-        std::cout << "Succesfully connected to Orchestrator and STA radio" << std::endl << std::endl;
+        std::cout << "Succesfully connected to Orchestrator and STA radio" << std::endl
+                  << std::endl;
 
         // Connect to RealSense and configure
         resetCam();
@@ -65,36 +71,54 @@ int main(int argc, char *argv[]) {
         std::cout << "RealSense Depth Scale is: " << depth_scale << std::endl;
 
         rs2::align align_to_color(RS2_STREAM_COLOR);
-        
+
         // Start GPIO ports
         startGPIO(72); // GPIO_UART1_RTS
 
         std::cout << "Device is ready." << std::endl;
 
-        while(1){
-            std::string capture_command = listenToServer(orq_sock);
+        while (1)
+        {
+            std::optional<std::string> result = listenToServer(orq_sock);
 
-            if (capture_command.empty()) {
-                // std::cerr << "Server disconnected." << std::endl;
-                break;
+            if (!result.has_value())
+            {
+                break; // socket closed or error
             }
 
-            try {
+            if (result.value().empty())
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(2)); // yield
+                continue;                                                  // no full message yet, wait
+            }
+
+            std::string capture_command = result.value();
+
+            try
+            {
                 int value = std::stoi(capture_command);
 
-                if ( value == -4 ) {
+                if (value == -4)
+                {
                     valueGPIO(72, 1);
                     stopWalking();
                     valueGPIO(72, 0);
-                } else if ( value == -3 ) {
+                }
+                else if (value == -3)
+                {
                     valueGPIO(72, 1);
                     startWalking();
                     valueGPIO(72, 0);
-                } else if ( value == -2 ) {
+                }
+                else if (value == -2)
+                {
                     startUart();
-                } else { // Normal capture procedure
+                }
+                else
+                { // Normal capture procedure
 
-                    for (int i = 0; i < value; i++) {
+                    for (int i = 0; i < value; i++)
+                    {
                         // Get radio data
                         std::string currBeamRSS = getPerBeamRSS(radio_sock);
                         sendData(orq_sock, currBeamRSS, "rss_sta"); // Send rss data to server
@@ -109,20 +133,22 @@ int main(int argc, char *argv[]) {
                         std::string depth_str(depth_frame.begin(), depth_frame.end());
                         sendData(orq_sock, depth_str, "depth_sta");
                     }
-                    
                 }
-            } catch (...) {
+            }
+            catch (...)
+            {
                 std::cerr << "Unknown message: " << capture_command << std::endl;
             }
-            
         }
-        
+
         close(orq_sock);
         close(radio_sock);
         p.stop(); // RealSense pipeline
-        std::cout << std::endl << "Connections closed" << std::endl;
-        
-    } catch (const std::invalid_argument &e) {
+        std::cout << std::endl
+                  << "Connections closed" << std::endl;
+    }
+    catch (const std::invalid_argument &e)
+    {
         std::cerr << e.what() << std::endl;
         return -1;
     }
