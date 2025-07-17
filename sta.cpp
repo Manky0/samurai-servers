@@ -82,7 +82,6 @@ int main(int argc, char *argv[]) {
             try {
                 int value = std::stoi(capture_command);
 
-                
                 if ( value == -4 ) {
                     valueGPIO(72, 1);
                     stopWalking();

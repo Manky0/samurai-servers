@@ -12,9 +12,8 @@ tmux send-keys -t SamuraiCaptures:ceil "$sh_dir/../builds/ceil_cam.exe $cam_ip" 
 
 # sta (minnowboard)
 tmux send-keys -t SamuraiCaptures:sta "sshpass -p 'samuraimovel' ssh samurai@10.0.0.31" Enter
-tmux send-keys -t SamuraiCaptures:sta "sh ./Samurai/samurai-servers/scripts/STA/start_radio.sh" Enter
-tmux send-keys -t SamuraiCaptures:sta C-b C-d
-tmux send-keys -t SamuraiCaptures:sta "./Samurai/samurai-servers/builds/sta.exe 10.0.0.20" Enter
+tmux send-keys -t SamuraiCaptures:sta "sh ./Samurai/samurai-servers/scripts/STA/start_radio.sh | sleep 5" Enter
+tmux send-keys -t SamuraiCaptures:sta "echo \"samuraimovel\" | sudo -S ./Samurai/samurai-servers/builds/sta.exe 10.0.0.20" Enter
 
 # ap (raspberry)
 tmux send-keys -t SamuraiCaptures:ap "sshpass -p 'lasse' ssh pi@10.0.0.39" Enter
