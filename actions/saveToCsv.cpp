@@ -2,8 +2,10 @@
 #include <cstring>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <filesystem>
 
 using json = nlohmann::json;
+namespace fs = std::filesystem;
 
 #include "../orchestrator.h"
 
@@ -14,6 +16,8 @@ void saveToCsv(json data, uint64_t captured_at, uint64_t received_at) {
         std::vector<int> snr_data = data["snr_data"];
 
         extern std::string session_dir;  // Declare the global session_dir
+        fs::create_directories(session_dir);
+
         std::string filename = session_dir + std::to_string(mac_addr) + ".csv";
 
         // Open CSV file

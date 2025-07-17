@@ -135,6 +135,21 @@ void sendToAllClients(const std::string &message)
     }
 }
 
+std::string createNextSessionFolder(const std::string& base_output_dir) {
+    size_t folder_count = 0;
+    if (std::filesystem::exists(base_output_dir)) {
+        for (const auto& entry : std::filesystem::directory_iterator(base_output_dir)) {
+            if (entry.is_directory()) {
+                folder_count++;
+            }
+        }
+    }
+    std::ostringstream ss;
+    ss << std::setw(3) << std::setfill('0') << folder_count + 1;
+    std::string session_dir = base_output_dir + "/" + ss.str() + "/";
+    return session_dir;
+}
+
 void controlServer()
 {
     if (walk_time > 0) { // if robot walking control enabled
@@ -158,21 +173,6 @@ void controlServer()
 
     while (true)
     {
-        if (use_session_folders) {
-            size_t folder_count = 0;
-            if (std::filesystem::exists(base_output_dir)) {
-                for (const auto& entry : std::filesystem::directory_iterator(base_output_dir)) {
-                    if (entry.is_directory()) {
-                        folder_count++;
-                    }
-                }
-            }
-            std::ostringstream ss;
-            ss << std::setw(3) << std::setfill('0') << folder_count + 1;
-            session_dir = base_output_dir + "/" + ss.str() + "/";
-            std::filesystem::create_directories(session_dir);
-        }
-
         // ############### CLIENT SLEEP ###############
         // std::string command;
         // std::cin >> command;
@@ -183,6 +183,11 @@ void controlServer()
         // ############### ORCHESTRATOR SLEEP ###############
         // ----- INDEPENDENT FROM ROBOT (TYPE N CAPTURES) -----
         if (walk_time == 0) { 
+
+            if (use_session_folders) {
+                session_dir = createNextSessionFolder(base_output_dir);
+            }
+
             int n;
             std::cin >> n;
 
@@ -218,6 +223,10 @@ void controlServer()
                 
                 for (int point = 0; point < n_points; point++) {
 
+                    if (use_session_folders) {
+                        session_dir = createNextSessionFolder(base_output_dir);
+                    }
+
                     // Set CAPTURE interval timer
                     auto start_time = std::chrono::steady_clock::now();
                     auto wait_time = std::chrono::milliseconds{capture_interval};
@@ -236,9 +245,9 @@ void controlServer()
                     }
 
                     // Wait robot walk
-                    std::cout << "Robot will walk for " << walk_time << " seconds..." << std::endl;
+                    std::cout << "Robot will walk for " << walk_time << " ms..." << std::endl;
                     sendToAllClients("-3");
-                    std::this_thread::sleep_for(std::chrono::seconds(walk_time));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(walk_time));
                     std::cout << "Robot stopped!" << std::endl << std::endl;
                     sendToAllClients("-4");
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -308,7 +317,7 @@ int main(int argc, char *argv[])
                       << "  -S, --sessions\tEnable session mode (new folder will be created for each batch of data).\n"
                       << "  -i, --interval <ms>\tDefine capture interval in milliseconds (default: " << capture_interval << "ms).\n"
                       << "  -o, --output <path>\tDefine output directory (default: " << base_output_dir << "/).\n"
-                      << "  -w, --walk-time <s>\tDefine robot walking time in seconds (default: " << walk_time << "s/DISABLED).\n"
+                      << "  -w, --walk-time <ms>\tDefine robot walking time in milliseconds (default: " << walk_time << "ms/DISABLED).\n"
                       << "  -p, --n-points <number>\tDefine the number of points the robot will stop (if enabled)  (default: " << n_points << ").\n"
                       << "  -c, --n-captures <number>\tDefine number of captures when the robot stops (if enabled) (default: " << n_captures << ").\n"
                       << std::endl;
